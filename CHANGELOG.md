@@ -12,6 +12,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - The Deploy button now sets Vercel's Root Directory to `apps/web`, so the first build works without changing
   any settings.
+- The Vercel build no longer logs `npm warn Unknown env config "cache-dir"`: the build scripts run the Convex CLI
+  with `pnpm exec` instead of `npx`.
 
 ## [0.0.1] - 2026-10-27
 

@@ -35,10 +35,10 @@ cd "$ROOT/packages/backend"
 # 1. BETTER_AUTH_SECRET. `convex env get` exits 0 even when a variable is missing, so read the names
 #    list instead, and only create the secret when the list worked and the name is absent. If listing
 #    fails (the key may lack env permissions) we never touch it: overwriting would sign everyone out.
-if names="$(npx convex env list --names-only 2>/dev/null)"; then
+if names="$(pnpm exec convex env list --names-only 2>/dev/null)"; then
   if grep -qx "BETTER_AUTH_SECRET" <<<"$names"; then
     echo "✔ BETTER_AUTH_SECRET is already set (kept)"
-  elif npx convex env set BETTER_AUTH_SECRET "$(openssl rand -base64 32)" >/dev/null 2>&1; then
+  elif pnpm exec convex env set BETTER_AUTH_SECRET "$(openssl rand -base64 32)" >/dev/null 2>&1; then
     echo "✔ Generated BETTER_AUTH_SECRET on the Convex deployment"
   else
     echo "⚠ Couldn't set BETTER_AUTH_SECRET with this deploy key; the app's setup screen shows the one-line fix."
@@ -50,7 +50,7 @@ fi
 
 # 2. SITE_URL follows the production domain, so adding a custom domain fixes itself on the next deploy.
 if [[ -n "${VERCEL_PROJECT_PRODUCTION_URL:-}" ]]; then
-  if npx convex env set SITE_URL "https://${VERCEL_PROJECT_PRODUCTION_URL}" >/dev/null 2>&1; then
+  if pnpm exec convex env set SITE_URL "https://${VERCEL_PROJECT_PRODUCTION_URL}" >/dev/null 2>&1; then
     echo "✔ SITE_URL = https://${VERCEL_PROJECT_PRODUCTION_URL}"
   else
     echo "⚠ Couldn't set SITE_URL with this deploy key. Set it to https://${VERCEL_PROJECT_PRODUCTION_URL} in the Convex dashboard."
@@ -58,7 +58,7 @@ if [[ -n "${VERCEL_PROJECT_PRODUCTION_URL:-}" ]]; then
 fi
 
 # 3. Deploy Convex functions; `convex deploy` builds the web app (--cmd) before it pushes.
-npx convex deploy \
+pnpm exec convex deploy \
   --cmd-url-env-var-name NEXT_PUBLIC_CONVEX_URL \
   --cmd "bash \"$ROOT/scripts/vercel-build.sh\" --web"
 

@@ -17,7 +17,7 @@ cd "$ROOT/packages/backend"
 
 if [[ "${1:-}" == "--check-only" ]]; then
   shift
-  if ! npx convex run "$@" migrations:assertMigrated; then
+  if ! pnpm exec convex run "$@" migrations:assertMigrated; then
     echo "✖ This deployment still has data in the old layout, or runs a release older than the Spaces" >&2
     echo "  release (no migrations:assertMigrated). Deploy the Spaces release first; it migrates on deploy." >&2
     exit 1
@@ -27,12 +27,12 @@ if [[ "${1:-}" == "--check-only" ]]; then
 fi
 
 echo "▸ Running data migrations (migrations:run)"
-if ! npx convex run "$@" migrations:run; then
+if ! pnpm exec convex run "$@" migrations:run; then
   echo "✖ The data migration failed. The new functions are deployed but some data wasn't moved." >&2
   echo "  Fix what the error above names, then re-run: bash scripts/migrate.sh $*  (it's safe to repeat)." >&2
   exit 1
 fi
-if ! npx convex run "$@" migrations:assertMigrated >/dev/null; then
+if ! pnpm exec convex run "$@" migrations:assertMigrated >/dev/null; then
   echo "✖ migrations:assertMigrated found rows that still need migrating (see above)." >&2
   exit 1
 fi
