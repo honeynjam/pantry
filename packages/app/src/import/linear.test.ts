@@ -162,7 +162,7 @@ describe("mapping", () => {
 
   it("suggests valid space keys", () => {
     expect(suggestKey("ENG", "acme.design")).toBe("ENG");
-    expect(suggestKey("X", "Honey & Jam")).toBe("HJ");
+    expect(suggestKey("X", "Salt & Pepper")).toBe("SP");
     expect(suggestKey("1", "q")).toBe("LIN");
   });
 

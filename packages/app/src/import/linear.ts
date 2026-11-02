@@ -333,7 +333,7 @@ export function guessStatus(
   return (statuses.find((status) => status.category === category) ?? statuses[0])?._id;
 }
 
-/** A valid space key from a Linear prefix or team name ("Honey & Jam" → "HJ"). */
+/** A valid space key from a Linear prefix or team name ("Salt & Pepper" → "SP"). */
 export function suggestKey(prefix: string, team: string): string {
   const fromPrefix = prefix
     .toUpperCase()
