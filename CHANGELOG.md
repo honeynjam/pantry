@@ -16,6 +16,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   API tokens has the steps for each, and lists your **Connected apps** with a Disconnect button. Claude Code and
   Cursor keep working with API tokens as before.
 
+### Fixed
+
+- The Vercel build no longer logs `npm warn Unknown env config "cache-dir"`: the build scripts run the Convex CLI
+  with `pnpm exec` instead of `npx`.
+
 ## [0.1.21] - 2026-10-30
 
 ### Fixed
@@ -108,8 +113,6 @@ Onboarding and products or clients for new and existing workspaces, agents that 
 
 - The Deploy button now sets Vercel's Root Directory to `apps/web`, so the first build works without changing
   any settings.
-- The Vercel build no longer logs `npm warn Unknown env config "cache-dir"`: the build scripts run the Convex CLI
-  with `pnpm exec` instead of `npx`.
 
 ## [0.0.1] - 2026-10-27
 
