@@ -7,11 +7,19 @@ export const INVITE_TOKEN_PREFIX = "inv_";
 
 /** `prefix` + 32 random bytes as base64url. Call from an action. */
 export function randomToken(prefix: string): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  return `${prefix}${base64Url(crypto.getRandomValues(new Uint8Array(32)))}`;
+}
+
+function base64Url(bytes: Uint8Array): string {
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
-  const base64url = btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-  return `${prefix}${base64url}`;
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+/** SHA-256 of a string as unpadded base64url: the PKCE S256 transform (RFC 7636 §4.2). */
+export async function sha256Base64Url(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return base64Url(new Uint8Array(digest));
 }
 
 /** SHA-256 of a token as lower-case hex. Deterministic, so safe in queries and mutations. */

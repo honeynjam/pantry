@@ -94,6 +94,9 @@ export async function findToken(
     .withIndex("by_token_hash", (q) => q.eq("tokenHash", tokenHash))
     .first();
   if (!apiToken || apiToken.revokedAt !== undefined) return null;
+  // OAuth access tokens expire (convex/oauth.ts); personal API tokens have no expiresAt. The MCP
+  // route also checks `expiresAt` from mcp.verifyToken, since a cached query result can be stale.
+  if (apiToken.expiresAt !== undefined && apiToken.expiresAt <= Date.now()) return null;
   const member = await ctx.db.get("members", apiToken.memberId);
   if (!member || member.workspaceId !== apiToken.workspaceId || member.userId !== apiToken.userId)
     return null;

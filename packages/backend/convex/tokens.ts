@@ -39,7 +39,9 @@ export const insert = internalMutation({
       .query("apiTokens")
       .withIndex("by_user", (q) => q.eq("userId", me.userId))
       .collect();
-    if (mine.filter((row) => row.revokedAt === undefined).length >= MAX_ACTIVE_TOKENS) {
+    // OAuth access tokens (connected apps) have their own cap in convex/oauth.ts.
+    const active = mine.filter((row) => row.revokedAt === undefined && row.grantId === undefined);
+    if (active.length >= MAX_ACTIVE_TOKENS) {
       fail(
         "TOO_MANY_TOKENS",
         `You can have up to ${MAX_ACTIVE_TOKENS} tokens. Revoke one you no longer use first.`,
@@ -64,7 +66,12 @@ export const revoke = mutation({
     const me = await requireMember(ctx);
     const token = await ctx.db.get("apiTokens", tokenId);
     // Someone else's token is "not found": tokens are personal, even to the owner.
-    if (!token || token.userId !== me.userId || token.workspaceId !== me.workspaceId)
+    if (
+      !token ||
+      token.userId !== me.userId ||
+      token.workspaceId !== me.workspaceId ||
+      token.grantId !== undefined
+    )
       return notFound("Token");
     if (token.revokedAt === undefined)
       await ctx.db.patch("apiTokens", tokenId, { revokedAt: Date.now() });
@@ -81,8 +88,9 @@ export const list = query({
       .withIndex("by_user", (q) => q.eq("userId", me.userId))
       .order("desc")
       .take(100);
+    // Connected apps' access tokens are listed by oauth.connections instead.
     return tokens
-      .filter((token) => token.workspaceId === me.workspaceId)
+      .filter((token) => token.workspaceId === me.workspaceId && token.grantId === undefined)
       .map((token) => ({
         _id: token._id,
         _creationTime: token._creationTime,

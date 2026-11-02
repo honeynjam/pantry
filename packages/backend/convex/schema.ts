@@ -219,7 +219,82 @@ export default defineSchema({
     tokenHash: v.string(), // SHA-256 hex
     lastUsedAt: v.optional(v.number()),
     revokedAt: v.optional(v.number()),
+    // Set on the access token of an OAuth connection (Claude, ChatGPT…): which connection it belongs
+    // to and when it stops working. Personal API tokens have neither and never expire.
+    grantId: v.optional(v.id("oauthGrants")),
+    expiresAt: v.optional(v.number()),
   })
     .index("by_token_hash", ["tokenHash"])
+    .index("by_user", ["userId"]),
+
+  // MCP authorization (OAuth 2.1), convex/oauth.ts. No plain secrets: codes and tokens are SHA-256.
+
+  /** Apps that can ask to connect: registered (RFC 7591) or a cached Client ID Metadata Document. */
+  oauthClients: defineTable({
+    clientId: v.string(), // our random id (registered) or the metadata document's https URL
+    kind: v.union(v.literal("registered"), v.literal("metadata_document")),
+    name: v.string(), // self-reported by the app
+    redirectUris: v.array(v.string()),
+    clientUri: v.optional(v.string()),
+    logoUri: v.optional(v.string()),
+    cacheUntil: v.optional(v.number()), // metadata documents: refetch after this
+    usedAt: v.optional(v.number()), // first time someone allowed it; unused registrations expire
+  })
+    .index("by_client_id", ["clientId"])
+    .index("by_kind_and_used", ["kind", "usedAt"]),
+
+  /** An authorization request waiting on the consent screen (between /authorize and Allow). */
+  oauthRequests: defineTable({
+    requestId: v.string(), // random, in the consent screen's URL; not a credential
+    clientId: v.string(),
+    redirectUri: v.string(),
+    state: v.optional(v.string()),
+    codeChallenge: v.string(), // PKCE S256
+    resource: v.string(), // RFC 8707: this instance's /api/mcp
+    scope: v.optional(v.string()),
+    issuer: v.string(),
+    expiresAt: v.number(),
+  })
+    .index("by_request_id", ["requestId"])
+    .index("by_expires", ["expiresAt"]),
+
+  /** Authorization codes: single use, short-lived, kept until expiry to catch replays. */
+  oauthCodes: defineTable({
+    codeHash: v.string(),
+    clientId: v.string(),
+    redirectUri: v.string(),
+    codeChallenge: v.string(),
+    resource: v.string(),
+    scope: v.optional(v.string()),
+    userId: v.string(),
+    workspaceId: v.id("workspaces"),
+    memberId: v.id("members"),
+    expiresAt: v.number(),
+    usedAt: v.optional(v.number()),
+    grantId: v.optional(v.id("oauthGrants")), // the connection the code was exchanged for
+  })
+    .index("by_code_hash", ["codeHash"])
+    .index("by_expires", ["expiresAt"]),
+
+  /** A connected app (Settings → API tokens → Connected apps): one refresh token and one access token. */
+  oauthGrants: defineTable({
+    clientId: v.string(),
+    clientName: v.string(),
+    clientKind: v.union(v.literal("registered"), v.literal("metadata_document")),
+    redirectUri: v.string(),
+    userId: v.string(),
+    workspaceId: v.id("workspaces"),
+    memberId: v.id("members"),
+    resource: v.string(),
+    scope: v.optional(v.string()),
+    tokenId: v.optional(v.id("apiTokens")), // the current access token
+    refreshHash: v.string(),
+    refreshExpiresAt: v.number(),
+    previousRefreshHash: v.optional(v.string()), // honoured for REFRESH_REUSE_GRACE_MS after rotating
+    rotatedAt: v.optional(v.number()),
+    revokedAt: v.optional(v.number()),
+  })
+    .index("by_refresh_hash", ["refreshHash"])
+    .index("by_previous_refresh_hash", ["previousRefreshHash"])
     .index("by_user", ["userId"]),
 });
