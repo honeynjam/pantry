@@ -509,6 +509,21 @@ describe("oauth", () => {
       ]);
     });
 
+    it("forgets documents nobody allowed a day after their cache ran out", async () => {
+      const { t } = await setUp();
+      vi.useFakeTimers({ now: Date.now() });
+      const other = "https://unused.example.com/client.json";
+      stubDocument({ client_id: other, redirect_uris: [CHATGPT_CALLBACK] });
+      await start(t, await authorizeParams(other, { redirect_uri: CHATGPT_CALLBACK }));
+      vi.setSystemTime(Date.now() + 2 * 24 * 60 * 60 * 1000);
+      stubDocument({ client_id: CHATGPT, redirect_uris: [CHATGPT_CALLBACK] });
+      await start(t, await params());
+      const ids = (await t.run((ctx) => ctx.db.query("oauthClients").collect())).map(
+        (client) => client.clientId,
+      );
+      expect(ids).toEqual([CHATGPT]);
+    });
+
     it("refuses a document whose client_id doesn't match, or that lacks the redirect URI", async () => {
       const { t } = await setUp();
       stubDocument({

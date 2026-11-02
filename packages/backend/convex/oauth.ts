@@ -148,6 +148,19 @@ export const saveMetadataDocument = internalMutation({
     cacheUntil: v.number(),
   },
   handler: async (ctx, args) => {
+    // Documents nobody allowed, whose cache ran out over a day ago, go: no request can still need
+    // them (a request always follows a fresh fetch and lives 10 minutes).
+    const unused = await ctx.db
+      .query("oauthClients")
+      .withIndex("by_kind_and_used", (q) =>
+        q.eq("kind", "metadata_document").eq("usedAt", undefined),
+      )
+      .take(50);
+    for (const stale of unused) {
+      if ((stale.cacheUntil ?? 0) < Date.now() - UNUSED_CLIENT_TTL_MS) {
+        await ctx.db.delete("oauthClients", stale._id);
+      }
+    }
     const existing = await clientById(ctx, args.clientId);
     const fields = {
       name: args.name,
