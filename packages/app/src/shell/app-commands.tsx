@@ -20,6 +20,7 @@ import { useShortcut, useShortcutListener } from "../use-shortcuts";
 import type { WorkspaceData } from "./app-shell";
 import { lastSpace, spaceKeyFromPath, rememberSpace } from "./locations";
 import { ShortcutHelp } from "./shortcut-help";
+import { modeOf, vocabulary, type Kind } from "../lib/vocabulary";
 
 export type NewIssueRequest = NewIssueDefaults & { space?: Doc<"spaces"> };
 
@@ -30,7 +31,8 @@ export type AppCommands = {
   openPalette: () => void;
   openHelp: () => void;
   newIssue: (request?: NewIssueRequest) => void;
-  newSpace: () => void;
+  /** The new-space dialog, starting on `kind` (the sidebar's per-group "+"). */
+  newSpace: (kind?: Kind) => void;
   toggleSidebar: () => void;
 };
 
@@ -59,7 +61,7 @@ export function AppCommandsProvider({
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [creating, setCreating] = useState<NewIssueRequest | null>(null);
-  const [creatingSpace, setCreatingSpace] = useState(false);
+  const [creatingSpace, setCreatingSpace] = useState<{ kind?: Kind } | null>(null);
 
   const keyOnScreen = spaceKeyFromPath(pathname);
   useEffect(() => rememberSpace(keyOnScreen), [keyOnScreen]);
@@ -71,14 +73,15 @@ export function AppCommandsProvider({
   const newIssue = useCallback(
     (request: NewIssueRequest = {}) => {
       if (!request.space && !currentSpace) {
-        toast("Create a space first", {
-          description: "Issues live in spaces. Add one from the sidebar.",
+        const words = vocabulary(modeOf(data.workspace));
+        toast(`Add a ${words.one} first`, {
+          description: `Issues live in ${words.many.toLowerCase()}. Add one from the sidebar.`,
         });
         return;
       }
       setCreating(request);
     },
-    [currentSpace],
+    [currentSpace, data.workspace],
   );
 
   const goToSpace = (view: "list" | "board") => {
@@ -106,7 +109,7 @@ export function AppCommandsProvider({
       openPalette: () => setPaletteOpen(true),
       openHelp: () => setHelpOpen(true),
       newIssue,
-      newSpace: () => setCreatingSpace(true),
+      newSpace: (kind?: Kind) => setCreatingSpace({ kind }),
       toggleSidebar,
     }),
     [data, currentSpace, newIssue, toggleSidebar],
@@ -117,7 +120,12 @@ export function AppCommandsProvider({
     <AppCommandsContext value={value}>
       {children}
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
-      <NewSpaceDialog open={creatingSpace} onOpenChange={setCreatingSpace} />
+      <NewSpaceDialog
+        open={creatingSpace !== null}
+        onOpenChange={(open) => !open && setCreatingSpace(null)}
+        mode={modeOf(data.workspace)}
+        kind={creatingSpace?.kind}
+      />
       <ShortcutHelp open={helpOpen} onOpenChange={setHelpOpen} />
       {space && (
         <NewIssueDialog

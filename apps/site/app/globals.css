@@ -46,3 +46,128 @@
     transform: scaleX(1);
   }
 }
+
+/* ---------------------------------------------------------------------------------------------
+ * Docs prose: 16px reading text, monochrome, mono code (rendered markdown and generated pages).
+ * ------------------------------------------------------------------------------------------- */
+@layer components {
+  .docs-prose {
+    font-size: 1rem;
+    line-height: 1.75;
+    color: var(--foreground);
+  }
+  .docs-prose > * + *,
+  .docs-prose section > * + * {
+    margin-top: 1.1rem;
+  }
+  .docs-prose :is(h2, h3) {
+    font-family: var(--font-display);
+    font-weight: 500;
+    scroll-margin-top: 6rem;
+  }
+  .docs-prose h2 {
+    margin-top: 3rem;
+    font-size: 1.5rem;
+    line-height: 2rem;
+    letter-spacing: -0.02em;
+  }
+  .docs-prose h3 {
+    margin-top: 2rem;
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+  }
+  .docs-prose .heading-anchor {
+    color: inherit;
+    text-decoration: none;
+  }
+  .docs-prose .heading-anchor:hover::after {
+    content: " #";
+    color: var(--faint-foreground);
+  }
+  .docs-prose p,
+  .docs-prose li {
+    color: color-mix(in oklch, var(--foreground) 82%, var(--background));
+  }
+  .docs-prose strong {
+    font-weight: 600;
+    color: var(--foreground);
+  }
+  .docs-prose a:not(.heading-anchor) {
+    color: var(--foreground);
+    text-decoration: underline;
+    text-decoration-color: var(--gray-8);
+    text-underline-offset: 3px;
+  }
+  .docs-prose a:not(.heading-anchor):hover {
+    text-decoration-color: currentColor;
+  }
+  .docs-prose :is(ul, ol) {
+    padding-left: 1.25rem;
+  }
+  .docs-prose ul {
+    list-style: disc;
+  }
+  .docs-prose ol {
+    list-style: decimal;
+  }
+  .docs-prose li + li {
+    margin-top: 0.4rem;
+  }
+  .docs-prose li::marker {
+    color: var(--muted-foreground);
+  }
+  .docs-prose :not(pre) > code {
+    font-size: 0.85em;
+    padding: 0.1em 0.35em;
+    border-radius: var(--radius-sm);
+    background: var(--gray-3);
+    box-shadow: inset 0 0 0 1px var(--border);
+    color: var(--foreground);
+  }
+  .docs-prose pre {
+    overflow-x: auto;
+    padding: 1rem 1.125rem;
+    border-radius: 0.75rem;
+    background: var(--gray-2) !important;
+    box-shadow: inset 0 0 0 1px var(--border);
+    font-size: 0.8125rem;
+    line-height: 1.6;
+  }
+  .docs-prose blockquote {
+    padding: 0.875rem 1.125rem;
+    border-radius: 0.75rem;
+    background: var(--gray-2);
+    box-shadow: inset 0 0 0 1px var(--border);
+  }
+  .docs-prose blockquote p {
+    color: var(--foreground);
+  }
+  .docs-prose table {
+    display: block;
+    overflow-x: auto;
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+  .docs-prose :is(th, td) {
+    padding: 0.625rem 1rem 0.625rem 0;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    vertical-align: top;
+  }
+  .docs-prose th {
+    font-weight: 500;
+    color: var(--muted-foreground);
+  }
+  /* Cards inside prose (the MCP tool reference) lay themselves out. */
+  .docs-prose .not-prose :is(h3, p, table) {
+    margin-top: 0;
+  }
+  .docs-prose .not-prose table {
+    display: table;
+  }
+  .docs-prose .not-prose :is(p, td) {
+    color: inherit;
+  }
+}

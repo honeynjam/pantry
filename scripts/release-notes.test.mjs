@@ -55,6 +55,16 @@ describe("release-notes", () => {
     assert.throws(() => releaseNotes(changelog, "1x1x0"), /no "## \[1x1x0\]" section/);
   });
 
+  test("keeps a Pantry-Review marker line, which Sync upstream reads from the release notes", () => {
+    const marked = changelog.replace(
+      "<!-- a note for the maintainer -->",
+      "Pantry-Review: manual\n\n**Review this update before merging.**",
+    );
+    // The same pattern as .github/workflows/sync-upstream.yml (grep -Ei).
+    assert.match(releaseNotes(marked, "1.1.0"), /^[ \t]*Pantry-Review:[ \t]*manual[ \t]*$/im);
+    assert.doesNotMatch(releaseNotes(changelog, "1.1.0"), /Pantry-Review/);
+  });
+
   test("the real changelog has a section for the repo's version that can be extracted once it's dated", () => {
     const root = join(dirname(fileURLToPath(import.meta.url)), "..");
     const real = readFileSync(join(root, "CHANGELOG.md"), "utf8");
@@ -62,7 +72,7 @@ describe("release-notes", () => {
     const heading = new RegExp(`^## \\[${version.replaceAll(".", "\\.")}\\] - Unreleased$`, "m");
     const dated = real.replace(heading, `## [${version}] - 2026-10-26`);
     const notes = releaseNotes(dated, version);
-    assert.match(notes, /^### Added$/m);
+    assert.match(notes, /^### (Added|Changed|Deprecated|Removed|Fixed|Security)$/m);
     assert.doesNotMatch(notes, /TODO|\[Unreleased\]/);
   });
 });

@@ -1,6 +1,7 @@
-import { query } from "./_generated/server";
-import { requireMember } from "./lib/auth";
+import { mutation, query } from "./_generated/server";
+import { requireMember, requireOwner } from "./lib/auth";
 import { activeProjects, upgradePending } from "./lib/spaces";
+import { workspaceMode } from "./schema";
 
 /**
  * Everything the app shell needs in one subscription: the workspace, my member row, statuses (by
@@ -48,5 +49,17 @@ export const current = query({
       /** Active projects of active spaces, in each space's order. */
       projects,
     };
+  },
+});
+
+/**
+ * Owner only: what the workspace works on (products, client work or both). The app's words and the
+ * default kind of new spaces follow it; existing spaces keep their kind.
+ */
+export const setMode = mutation({
+  args: { mode: workspaceMode },
+  handler: async (ctx, { mode }) => {
+    const me = await requireOwner(ctx);
+    await ctx.db.patch("workspaces", me.workspaceId, { mode });
   },
 });

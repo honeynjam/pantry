@@ -101,6 +101,8 @@ and never deploys anything.
 
 1. In [CHANGELOG.md](CHANGELOG.md), move the `[Unreleased]` entries into a new `## [X.Y.Z] - YYYY-MM-DD` section,
    written for people running Pantry, and update the links at the bottom. Leave `[Unreleased]` empty.
+   If owners should look at this update before it goes live (it migrates data, needs a setting changed, or is
+   risky to deploy untested), mark it for review: see "Review before merging" below.
 2. Run `pnpm set-version X.Y.Z`. It sets the version in every `package.json`, the Mac app's config and
    `SERVER_VERSION` in `packages/backend/convex/lib/version.ts`, and fails if it can't find one of them. Raise
    `MIN_APP_VERSION` in the same file by hand only if this server no longer works with older Mac apps.
@@ -110,6 +112,26 @@ and never deploys anything.
 The workflow checks that the tag matches every version file and that the changelog has a dated section for it,
 runs the CI checks, and creates the GitHub Release with that section as its notes. Self-hosted copies get an
 update PR from their Sync upstream workflow the next Monday, or as soon as their owners run it.
+
+### Review before merging
+
+Self-hosters can let Sync upstream merge updates by themselves (`SYNC_AUTO_MERGE`, README → Automatic updates).
+To stop that for one release, put this line on its own, as the first line of the version's changelog section:
+
+```md
+## [X.Y.Z] - YYYY-MM-DD
+
+Pantry-Review: manual
+
+**Review this update before merging.** One or two sentences: what changes for owners and what to check.
+```
+
+The section becomes the release notes, so the line ends up in the GitHub Release. Sync upstream reads it from
+there: it then never auto-merges that release, and its PR opens with "Review before merging" and a link to the
+notes. The match is exact: `Pantry-Review: manual` alone on a line, any case, no other text. If Sync upstream can't
+read a release's notes, it doesn't auto-merge either. A later release is held back too while it would bring a
+marked release the owner hasn't merged yet, so there's no need to mark the next one as well. Use it sparingly:
+every marked release waits for each owner to merge it by hand.
 
 A version with a pre-release part (`1.0.0-rc.1`) becomes a GitHub pre-release, which Sync upstream ignores. If
 the workflow fails, fix the problem on `main`, then move the tag: `git tag -d vX.Y.Z`,

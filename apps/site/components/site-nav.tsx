@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { NavigationMenu } from "@base-ui/react/navigation-menu";
 import { AnimatePresence, motion } from "motion/react";
 import { ChevronDown, Keyboard, Laptop, Menu, Server, Sparkles, X } from "lucide-react";
@@ -38,9 +39,9 @@ export function SiteNav({ stars }: { stars: number | null }) {
       data-scrolled={useScrolled()}
     >
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-2 px-5 sm:px-8">
-        <a href="#top" aria-label="Pantry home" className="mr-4 text-lg">
+        <Link href="/" aria-label="Pantry home" className="mr-4 text-lg">
           <PantryLogo playful />
-        </a>
+        </Link>
 
         <NavigationMenu.Root className="max-md:hidden">
           <NavigationMenu.List className="flex items-center gap-0.5">
@@ -57,7 +58,7 @@ export function SiteNav({ stars }: { stars: number | null }) {
                   return (
                     <NavigationMenu.Link
                       key={item.id}
-                      href={`#${item.id}`}
+                      href={`/#${item.id}`}
                       className="group/link hover:bg-accent flex gap-3 rounded-lg p-3 transition-colors"
                     >
                       <span className="border-border bg-background text-muted-foreground group-hover/link:text-foreground flex size-8 shrink-0 items-center justify-center rounded-md border">
@@ -143,7 +144,7 @@ export function SiteNav({ stars }: { stars: number | null }) {
                 (item) => (
                   <li key={item.id}>
                     <a
-                      href={"href" in item ? item.href : `#${item.id}`}
+                      href={"href" in item ? item.href : `/#${item.id}`}
                       onClick={() => setOpen(false)}
                       className="text-foreground flex h-11 items-center text-lg"
                     >

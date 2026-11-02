@@ -21,3 +21,32 @@ export function checkColor(color: string): string {
   if (!COLOR_PATTERN.test(color)) fail("INVALID_COLOR", "Pick a colour from the palette.");
   return color;
 }
+
+/**
+ * The curated palette the app offers for labels and projects (packages/ui `LABEL_COLORS` mirrors it;
+ * a test in packages/app keeps them equal). MCP accepts only these names, so an agent can't store a
+ * colour the app has no swatch for.
+ */
+export const PALETTE = [
+  "gray",
+  "red",
+  "orange",
+  "yellow",
+  "lime",
+  "green",
+  "teal",
+  "blue",
+  "indigo",
+  "violet",
+  "pink",
+] as const;
+export type PaletteColor = (typeof PALETTE)[number];
+
+/** A palette name (any case), or an error listing the palette. */
+export function checkPaletteColor(color: string): PaletteColor {
+  const name = color.trim().toLowerCase();
+  if (!(PALETTE as readonly string[]).includes(name)) {
+    fail("INVALID_COLOR", `No colour "${color.trim()}". Colours: ${PALETTE.join(", ")}.`);
+  }
+  return name as PaletteColor;
+}

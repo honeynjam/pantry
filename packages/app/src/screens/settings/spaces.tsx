@@ -8,6 +8,7 @@ import { NewSpaceDialog } from "../../components/new-space-dialog";
 import { SpaceAvatar } from "../../components/space-avatar";
 import { routes, useNavigation } from "../../navigation";
 import type { WorkspaceData } from "../../shell/app-shell";
+import { KIND_LABEL, kindOf, modeOf, vocabulary } from "../../lib/vocabulary";
 import { SettingsEmpty, SettingsGroup, SettingsList, SettingsPanel } from "./parts";
 
 function projectCount(data: WorkspaceData, spaceId: string): string {
@@ -18,23 +19,25 @@ function projectCount(data: WorkspaceData, spaceId: string): string {
 export function SpacesSettings({ data }: { data: WorkspaceData }) {
   const { Link } = useNavigation();
   const [creating, setCreating] = useState(false);
+  const mode = modeOf(data.workspace);
+  const words = vocabulary(mode);
   return (
     <SettingsPanel
-      title="Spaces"
-      description="A space is one of your products or a client. Each has its own key, issues, context doc and projects. Open one to rename it, edit its context doc, manage its projects or archive it."
+      title={words.many}
+      description={`Each ${words.one} has its own key, issues, context doc and projects. Open one to rename it, edit its context doc, manage its projects or archive it.`}
       actions={
         <Button onClick={() => setCreating(true)} data-icon="inline-start">
           <PlusIcon />
-          New space
+          {words.newLabel}
         </Button>
       }
     >
       <SettingsGroup
-        title="Active spaces"
+        title="Active"
         hint={<span className="tabular font-mono">{data.spaces.length}</span>}
       >
         {data.spaces.length === 0 ? (
-          <SettingsEmpty>No active spaces.</SettingsEmpty>
+          <SettingsEmpty>Nothing here yet.</SettingsEmpty>
         ) : (
           <SettingsList>
             {data.spaces.map((space) => (
@@ -45,9 +48,11 @@ export function SpacesSettings({ data }: { data: WorkspaceData }) {
                 >
                   <SpaceAvatar space={space} size="sm" />
                   <span className="text-foreground min-w-0 flex-1 truncate">{space.name}</span>
-                  <span className="text-muted-foreground text-xs">
-                    {space.kind === "client" ? "Client" : "Product"}
-                  </span>
+                  {(words.asksKind || kindOf(space) !== words.defaultKind) && (
+                    <span className="text-muted-foreground text-xs">
+                      {KIND_LABEL[kindOf(space)].one}
+                    </span>
+                  )}
                   <span className="text-muted-foreground tabular text-xs">
                     {projectCount(data, space._id)}
                   </span>
@@ -68,7 +73,7 @@ export function SpacesSettings({ data }: { data: WorkspaceData }) {
           </SettingsList>
         )}
       </SettingsGroup>
-      <NewSpaceDialog open={creating} onOpenChange={setCreating} />
+      <NewSpaceDialog open={creating} onOpenChange={setCreating} mode={mode} />
     </SettingsPanel>
   );
 }

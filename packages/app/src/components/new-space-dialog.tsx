@@ -19,6 +19,7 @@ import { useMutation } from "convex/react";
 import { useState, type FormEvent } from "react";
 import { routes, useNavigation } from "../navigation";
 import { describeError, FormError } from "../screens/form-error";
+import { KIND_LABEL, vocabulary, type Kind, type Mode } from "../lib/vocabulary";
 
 /** "Web app" → "WEB"; "2nd brain" → "ND" (keys start with a letter). */
 export function suggestKey(name: string): string {
@@ -30,18 +31,26 @@ export function suggestKey(name: string): string {
 }
 
 /**
- * Name, kind (product or client) and key; the key is suggested from the name until you type your
- * own. Opens the new space.
+ * Name, kind and key; the key is suggested from the name until you type your own. Opens the new
+ * space. The words and the kind follow the workspace's mode: a product or client workspace makes
+ * products or clients without asking; with both, it asks (starting on `kind` when given).
  */
 export function NewSpaceDialog({
   open,
   onOpenChange,
+  mode,
+  kind: startKind,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  mode: Mode;
+  kind?: Kind;
 }) {
   const createSpace = useMutation(api.spaces.create);
-  const [kind, setKind] = useState<"product" | "client">("product");
+  const words = vocabulary(mode);
+  const [chosenKind, setKind] = useState<Kind | null>(null);
+  const kind = chosenKind ?? startKind ?? words.defaultKind;
+  const noun = KIND_LABEL[kind].one.toLowerCase();
   const { navigate } = useNavigation();
   const [name, setName] = useState("");
   const [key, setKey] = useState<string | null>(null);
@@ -54,7 +63,7 @@ export function NewSpaceDialog({
     setName("");
     setKey(null);
     setAvatar(randomPantryAvatar());
-    setKind("product");
+    setKind(null);
     setError(null);
   }
 
@@ -69,7 +78,7 @@ export function NewSpaceDialog({
       reset();
       navigate(routes.space(created.key));
     } catch (err) {
-      setError(describeError(err, "Couldn't create the space."));
+      setError(describeError(err, `Couldn't create the ${noun}.`));
     } finally {
       setPending(false);
     }
@@ -86,7 +95,7 @@ export function NewSpaceDialog({
       <DialogContent>
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <DialogHeader>
-            <DialogTitle>New space</DialogTitle>
+            <DialogTitle>New {noun}</DialogTitle>
             <DialogDescription>
               Issues in it get keys like {shownKey || "KEY"}-1. The key can&apos;t change later.
             </DialogDescription>
@@ -99,35 +108,37 @@ export function NewSpaceDialog({
                   value={avatar}
                   onChange={setAvatar}
                   seed="new-space"
-                  label="Space avatar"
+                  label={`${KIND_LABEL[kind].one} avatar`}
                   className="-my-1 -ml-1"
                 />
                 <Input
                   id="new-space-name"
                   value={name}
                   onChange={(event) => setName(event.target.value)}
-                  placeholder="e.g. Pantry, or Acme Ltd"
+                  placeholder={kind === "client" ? "e.g. Acme Ltd" : "e.g. Pantry"}
                   required
                   autoFocus
                   autoComplete="off"
                 />
               </div>
             </Field>
-            <Field>
-              <FieldLabel>Kind</FieldLabel>
-              <SegmentedControl
-                aria-label="Kind"
-                value={kind}
-                onValueChange={setKind}
-                options={[
-                  { value: "product", label: "Product" },
-                  { value: "client", label: "Client" },
-                ]}
-              />
-              <FieldDescription>
-                One of your products, or client work. You can change it later.
-              </FieldDescription>
-            </Field>
+            {words.asksKind && (
+              <Field>
+                <FieldLabel>Kind</FieldLabel>
+                <SegmentedControl
+                  aria-label="Kind"
+                  value={kind}
+                  onValueChange={setKind}
+                  options={[
+                    { value: "product", label: "Product" },
+                    { value: "client", label: "Client" },
+                  ]}
+                />
+                <FieldDescription>
+                  One of your products, or client work. You can change it later.
+                </FieldDescription>
+              </Field>
+            )}
             <Field>
               <FieldLabel htmlFor="new-space-key">Key</FieldLabel>
               <Input
@@ -157,7 +168,7 @@ export function NewSpaceDialog({
               Cancel
             </Button>
             <Button type="submit" disabled={pending || !name.trim() || shownKey.length < 2}>
-              {pending ? "Creating…" : "Create space"}
+              {pending ? "Creating…" : `Create ${noun}`}
             </Button>
           </DialogFooter>
         </form>

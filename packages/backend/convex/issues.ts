@@ -14,6 +14,7 @@ import {
 } from "./lib/issues";
 import { isProject } from "./lib/model";
 import { isTerminal, OPEN_CATEGORIES } from "./lib/rules";
+import { searchIssues } from "./lib/search";
 import { getProject } from "./lib/spaces";
 import { priority } from "./schema";
 
@@ -169,9 +170,6 @@ export const get = query({
   },
 });
 
-const SEARCH_LIMIT = 20;
-const KEY_PATTERN = /^[A-Z][A-Z0-9]{1,9}-\d+$/;
-
 /** What the palette shows for a match: no description, so results stay small. */
 const searchResult = (issue: Doc<"issues">) => ({
   _id: issue._id,
@@ -198,50 +196,8 @@ export const search = query({
   },
   handler: async (ctx, { text, spaceId, projectId }) => {
     const me = await requireMember(ctx);
-    const trimmed = text.trim();
-    if (!trimmed) return [];
-    const found = new Map<string, Doc<"issues">>();
-    const byKey = (key: string) =>
-      ctx.db
-        .query("issues")
-        .withIndex("by_workspace_and_key", (q) =>
-          q.eq("workspaceId", me.workspaceId).eq("key", key),
-        )
-        .first();
-    const keep = (issue: Doc<"issues"> | null) => {
-      if (
-        issue &&
-        (!spaceId || issue.spaceId === spaceId) &&
-        (!projectId || issue.projectId === projectId)
-      ) {
-        found.set(issue._id, issue);
-      }
-    };
-
-    const upper = trimmed.toUpperCase();
-    if (KEY_PATTERN.test(upper)) keep(await byKey(upper));
-    if (/^\d{1,9}$/.test(trimmed)) {
-      const spaces = await ctx.db
-        .query("spaces")
-        .withIndex("by_workspace", (q) => q.eq("workspaceId", me.workspaceId))
-        .collect();
-      // One lookup per space, in parallel; results keep the spaces' order.
-      for (const issue of await Promise.all(
-        spaces.map((space) => byKey(`${space.key}-${Number(trimmed)}`)),
-      ))
-        keep(issue);
-    }
-
-    const matches = await ctx.db
-      .query("issues")
-      .withSearchIndex("search_title", (q) => {
-        const scoped = q.search("title", trimmed).eq("workspaceId", me.workspaceId);
-        const inSpace = spaceId ? scoped.eq("spaceId", spaceId) : scoped;
-        return projectId ? inSpace.eq("projectId", projectId) : inSpace;
-      })
-      .take(SEARCH_LIMIT);
-    for (const issue of matches) if (!found.has(issue._id)) found.set(issue._id, issue);
-    return [...found.values()].slice(0, SEARCH_LIMIT).map(searchResult);
+    const issues = await searchIssues(ctx, me.workspaceId, { text, spaceId, projectId });
+    return issues.map(searchResult);
   },
 });
 

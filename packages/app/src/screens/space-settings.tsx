@@ -11,10 +11,24 @@ import { ColorPicker } from "@pantry/ui/components/color-picker";
 import { Input } from "@pantry/ui/components/input";
 import { SegmentedControl } from "@pantry/ui/components/segmented-control";
 import { LABEL_COLORS } from "@pantry/ui/lib/issue-meta";
+import {
+  motion,
+  spring,
+  useMotionTransition,
+  usePrefersReducedMotion,
+} from "@pantry/ui/lib/motion";
+import { cn } from "@pantry/ui/lib/utils";
 import { PantryAvatarPicker } from "@pantry/ui/components/pantry-avatar-picker";
 import type { PantryAvatarValue } from "@pantry/ui/lib/pantry-avatars";
-import { ArchiveIcon, ArrowDownIcon, ArrowUpIcon, PlusIcon } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import {
+  ArchiveIcon,
+  ArchiveRestoreIcon,
+  ArrowDownIcon,
+  ArrowUpIcon,
+  ChevronRightIcon,
+  PlusIcon,
+} from "lucide-react";
+import { useId, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { MarkdownEditor } from "../components/markdown-editor";
 import { ConfirmDialog } from "../components/confirm-dialog";
@@ -24,6 +38,8 @@ import { EntryGate } from "../entry";
 import { fullDate, timeAgo } from "../lib/format";
 import { routes, useNavigation } from "../navigation";
 import { AppShell } from "../shell/app-shell";
+import { projectColor } from "../shell/space-color";
+import { KIND_LABEL, kindOf, modeOf, vocabulary, type Mode } from "../lib/vocabulary";
 import { describeError } from "./form-error";
 import { NotMemberScreen } from "./not-member";
 import { SpaceNotFound, SpaceTitle } from "./space-chrome";
@@ -54,6 +70,7 @@ export function SpaceSettingsPage({ spaceKey }: { spaceKey: string }) {
                   <SpaceSettings
                     space={space}
                     projects={data.projects.filter((row) => row.spaceId === space._id)}
+                    mode={modeOf(data.workspace)}
                   />
                 </div>
               );
@@ -65,7 +82,18 @@ export function SpaceSettingsPage({ spaceKey }: { spaceKey: string }) {
   );
 }
 
-function SpaceSettings({ space, projects }: { space: Doc<"spaces">; projects: Project[] }) {
+function SpaceSettings({
+  space,
+  projects,
+  mode,
+}: {
+  space: Doc<"spaces">;
+  projects: Project[];
+  mode: Mode;
+}) {
+  // A product or client workspace doesn't ask; a space of the other kind still shows (and can fix) it.
+  const showKind = vocabulary(mode).asksKind || kindOf(space) !== vocabulary(mode).defaultKind;
+  const noun = KIND_LABEL[kindOf(space)].one;
   const update = useMutation(api.spaces.update);
   const archive = useMutation(api.spaces.archive);
   const saveAvatar = useMutation(api.spaces.setAvatar);
@@ -83,7 +111,7 @@ function SpaceSettings({ space, projects }: { space: Doc<"spaces">; projects: Pr
 
   return (
     <SettingsPanel
-      title="Space settings"
+      title={`${noun} settings`}
       description={
         <span className="inline-flex items-center gap-1.5">
           <SpaceAvatar space={space} size="xs" />
@@ -110,7 +138,7 @@ function SpaceSettings({ space, projects }: { space: Doc<"spaces">; projects: Pr
             <PantryAvatarPicker
               value={pendingAvatar ?? spaceAvatar(space)}
               seed={space.key}
-              label="Space avatar"
+              label={`${noun} avatar`}
               className="-my-0.5 -ml-1"
               onChange={async (avatar) => {
                 setPendingAvatar(avatar);
@@ -124,22 +152,24 @@ function SpaceSettings({ space, projects }: { space: Doc<"spaces">; projects: Pr
               }}
             />
           </div>
-          <div className="min-h-row flex items-center gap-3 px-3 py-1.5 text-sm">
-            <span className="text-muted-foreground w-24 shrink-0">Kind</span>
-            <SegmentedControl
-              size="sm"
-              aria-label="Kind"
-              value={space.kind ?? "product"}
-              onValueChange={(kind) => void save({ kind })}
-              options={[
-                { value: "product", label: "Product" },
-                { value: "client", label: "Client" },
-              ]}
-            />
-            <span className="text-muted-foreground text-xs">
-              One of your products, or client work.
-            </span>
-          </div>
+          {showKind && (
+            <div className="min-h-row flex items-center gap-3 px-3 py-1.5 text-sm">
+              <span className="text-muted-foreground w-24 shrink-0">Kind</span>
+              <SegmentedControl
+                size="sm"
+                aria-label="Kind"
+                value={space.kind ?? "product"}
+                onValueChange={(kind) => void save({ kind })}
+                options={[
+                  { value: "product", label: "Product" },
+                  { value: "client", label: "Client" },
+                ]}
+              />
+              <span className="text-muted-foreground text-xs">
+                One of your products, or client work.
+              </span>
+            </div>
+          )}
           <div className="min-h-row flex items-center gap-3 px-3 py-1 text-sm">
             <span className="text-muted-foreground w-24 shrink-0">Key</span>
             <IssueKey value={space.key} className="text-foreground" />
@@ -158,7 +188,7 @@ function SpaceSettings({ space, projects }: { space: Doc<"spaces">; projects: Pr
           </p>
           <Button variant="secondary" onClick={() => setArchiving(true)} data-icon="inline-start">
             <ArchiveIcon />
-            Archive space
+            Archive {noun.toLowerCase()}
           </Button>
         </div>
       </SettingsGroup>
@@ -167,7 +197,7 @@ function SpaceSettings({ space, projects }: { space: Doc<"spaces">; projects: Pr
         onOpenChange={setArchiving}
         title={`Archive ${space.name}?`}
         description={`It disappears from the sidebar and space lists. Its issues keep their ${space.key} keys.`}
-        confirmLabel="Archive space"
+        confirmLabel={`Archive ${noun.toLowerCase()}`}
         onConfirm={async () => {
           try {
             await archive({ spaceId: space._id });
@@ -186,8 +216,8 @@ const PROJECT_COLORS = LABEL_COLORS.filter((color) => color !== "gray");
 
 /**
  * The space's projects: optional workstreams ("LinkedIn", "Launch"). Add, rename, recolour,
- * reorder (arrow buttons, so it works from the keyboard) and archive. Archiving keeps the issues
- * in the space with no project.
+ * reorder (arrow buttons, so it works from the keyboard), archive and restore. Archiving keeps the
+ * issues in the space with no project.
  */
 function ProjectsSettings({ space, projects }: { space: Doc<"spaces">; projects: Project[] }) {
   const create = useMutation(api.projects.create);
@@ -312,12 +342,13 @@ function ProjectsSettings({ space, projects }: { space: Doc<"spaces">; projects:
             Add project
           </Button>
         </form>
+        <ArchivedProjects space={space} />
       </div>
       <ConfirmDialog
         open={archiving !== null}
         onOpenChange={(open) => !open && setArchiving(null)}
         title={`Archive ${archiving?.name ?? "project"}?`}
-        description="Its issues stay in the space with no project, and each gets an activity entry."
+        description="Its issues stay in the space with no project, and each gets an activity entry. You can restore the project later from Archived; its issues won't move back."
         confirmLabel="Archive project"
         onConfirm={async () => {
           if (!archiving) return;
@@ -381,5 +412,110 @@ function ContextDoc({ space }: { space: Doc<"spaces"> }) {
         Markdown. Saves when you click away or press <Keycap keys="mod+enter" />.
       </p>
     </SettingsGroup>
+  );
+}
+
+/**
+ * Archived projects, collapsed by default, with Restore. A restored project goes to the end of the
+ * list; issues it had stay without a project (archiving cleared them). If an active project now has
+ * the same name, restore is refused: rename the archived one here (its name is editable) and restore.
+ */
+function ArchivedProjects({ space }: { space: Doc<"spaces"> }) {
+  const archived = useQuery(api.projects.listArchived, { spaceId: space._id });
+  const restore = useMutation(api.projects.restore);
+  const update = useMutation(api.projects.update);
+  const [open, setOpen] = useState(false);
+  const [restoring, setRestoring] = useState<string | null>(null);
+  const transition = useMotionTransition(spring.smooth);
+  const reduceMotion = usePrefersReducedMotion();
+  const listId = useId();
+  if (!archived || archived.length === 0) return null;
+
+  async function onRestore(project: Project) {
+    setRestoring(project._id);
+    try {
+      await restore({ projectId: project._id });
+      toast(`Restored ${project.name}`);
+    } catch (err) {
+      toast.error(describeError(err, "Couldn't restore the project."));
+    } finally {
+      setRestoring(null);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2 pt-2">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={listId}
+        onClick={() => setOpen(!open)}
+        className="text-muted-foreground hover:text-foreground flex h-7 w-fit items-center gap-1.5 rounded-md px-1 text-xs font-medium transition-colors duration-(--duration-instant)"
+      >
+        <ChevronRightIcon
+          aria-hidden
+          className={cn(
+            "size-3.5 transition-transform duration-(--duration-fast) ease-(--ease-out) motion-reduce:transition-none",
+            open && "rotate-90",
+          )}
+        />
+        Archived
+        <span className="tabular font-mono">{archived.length}</span>
+      </button>
+      {open && (
+        <motion.div
+          id={listId}
+          initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={transition}
+          className="flex flex-col gap-2"
+        >
+          <SettingsList aria-label="Archived projects">
+            {archived.map((project) => (
+              <SettingsRow key={project._id}>
+                <span
+                  className="ml-2 size-2 shrink-0 rounded-[2px] opacity-60"
+                  style={{ background: projectColor(project) }}
+                  aria-hidden
+                />
+                <InlineInput
+                  value={project.name}
+                  aria-label={`Name of archived project ${project.name}`}
+                  maxLength={60}
+                  className="text-muted-foreground h-7 flex-1"
+                  onSave={async (next) => {
+                    try {
+                      await update({ projectId: project._id, name: next });
+                    } catch (err) {
+                      toast.error(describeError(err, "Couldn't rename the project."));
+                    }
+                  }}
+                />
+                <span
+                  className="text-muted-foreground shrink-0 text-xs"
+                  title={fullDate(project.archivedAt!)}
+                >
+                  Archived {timeAgo(project.archivedAt!)}
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  data-icon="inline-start"
+                  disabled={restoring === project._id}
+                  onClick={() => void onRestore(project)}
+                >
+                  <ArchiveRestoreIcon />
+                  Restore
+                </Button>
+              </SettingsRow>
+            ))}
+          </SettingsList>
+          <p className="text-muted-foreground text-xs">
+            Restoring puts a project back at the end of the list. Issues that were in it when it was
+            archived stay without a project; move them back if you need to.
+          </p>
+        </motion.div>
+      )}
+    </div>
   );
 }

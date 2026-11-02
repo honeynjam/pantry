@@ -1,6 +1,6 @@
 [package]
 name = "pantry-desktop"
-version = "0.0.1"
+version = "0.1.21"
 description = "Pantry Mac app (M2 Tauri auth spike)"
 license = "MIT"
 edition = "2021"

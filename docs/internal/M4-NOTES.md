@@ -120,3 +120,128 @@ Each one is built this way and easy to change.
 - MCP clients on the 2026-07-28 protocol revision. The SDK client negotiated 2025-11-25; I didn't log which
   revision Claude Code used. mcp-handler serves both.
 - Behaviour on Vercel's runtime (only `next start` locally) and under concurrent agents.
+
+## After M4: agents organise work too (27 Oct 2026, branch `mcp/more-tools`)
+
+Kris asked for "the MCP so it can do more things, e.g. add/update projects, create spaces". Agents can now do
+what a member does in the app's settings screens, through the same helpers and permission checks.
+
+| Commit | What |
+|---|---|
+| `c58377e` | `lib/organise.ts` and `lib/search.ts`: the app's space, context-doc, project, label and search logic lifted out of the mutations (no behaviour change; all 136 backend tests unchanged) |
+| `308eec0` | `convex/mcp.ts`: `getWorkspace`, `searchIssues`, `createSpace`, `updateSpace`, `updateSpaceContext`, `createProject`, `updateProject`, `archiveProject`, `createLabel`; `updateIssue` takes title, description and due date |
+| `7688258` | `packages/mcp`: the nine tools with zod inputs, `destructiveHint` on `archive_project`, links to spaces, server instructions |
+| `4e25aa7` | Spec §6/§10b, README, `docs/spikes/mcp-clients.md`, these notes, screenshots `mcp-more-*` |
+
+**The 16 tools:** issue work (`get_issue`, `list_issues`, `search_issues`, `create_issue`, `create_sub_issue`,
+`add_comment`, `update_issue`), orientation and context (`get_workspace`, `get_space_context`,
+`update_space_context`) and organising (`create_space`, `update_space`, `create_project`, `update_project`,
+`archive_project`, `create_label`).
+
+### Decisions for Kris
+
+1. **Not exposed over MCP, on purpose:** deleting spaces, comments or labels; adding or removing statuses;
+   invites, members and API tokens. They're destructive or account-level, and a leaked token shouldn't be able to
+   do them. The server instructions and `update_space`'s description tell agents to ask a person. Easy to revisit
+   tool by tool. **Reversed by Kris on 27 Oct 2026:** deleting issues (`delete_issue`) and editing the status
+   definitions (`update_status`, `reorder_statuses`) are now exposed; see "Delete issues, edit statuses,
+   un-archive projects" below.
+2. **No `archive_space`.** The app has `spaces.archive` but no un-archive, and an archived space's key stays
+   taken, so it isn't reversible. Skipped until the app can restore a space.
+3. **`archive_project`** clears the project from its issues (each change logged "via MCP"). Since 27 Oct 2026 it's
+   reversible (`unarchive_project`, and Restore in Space settings), so it's no longer marked destructive; the
+   issues still don't move back.
+4. **Permissions match the app: any member's token** can create spaces, projects and labels and rewrite context
+   docs (none of these is owner-only in the app; invites are, and stay off MCP). Tested with the partner's token.
+5. **`get_workspace` replaces `list_spaces` / `list_projects`.** The tables are small (it reads spaces, projects,
+   statuses, labels and members through indexes), so one call orients an agent. Projects of archived spaces
+   aren't listed; the space is, flagged `archived: true`.
+6. **`create_issue` gets no `parent`:** that would duplicate `create_sub_issue`. It already took labels and due
+   dates.
+7. **Colours over MCP are palette names only** (`gray` … `pink`, the app's swatches; a test keeps the two lists
+   equal). The app's mutations also accept hex for statuses; agents can't store a colour the app has no swatch
+   for. Defaults: a new project gets the next colour in the app's rotation (palette minus gray), a label gray.
+8. **Context docs record who and when** (`updatedBy`, `updatedAt`, as in the app) but carry no "via MCP" tag:
+   docs have no `via` field, and adding one would be a schema change. The settings page shows "Edited … by Kris".
+
+### How it was verified
+
+- `pnpm check` (format, typecheck, lint, tests, script tests, web build): passes. Backend 157 tests (21 new in
+  `mcp-organise.test.ts`: every new tool, a revoked token on each, cross-workspace "not found" for spaces,
+  projects, labels, context docs and search, key rules, palette errors, partner-token parity, archive leaving
+  issues and sub-issues in the space with `project_changed` rows via MCP, title/description/due-date rows);
+  `packages/mcp` 27 handler tests (16 tools listed, pass-through per new tool, zod refusals before Convex);
+  app 65 (palette parity).
+- End to end: production build on :3300, fresh anonymous backend on :3330/:3331, owner and token created in the
+  browser, then the MCP client SDK: `get_workspace` → `create_space` ACME (client) → `update_space_context` →
+  `create_project` Website (red, the rotation) and Launch (violet) → `create_label` Content, Bug →
+  `create_issue` ×3 across both projects with labels and due dates → `update_project` Website → "Marketing site",
+  teal → `update_issue` ACME-1 to Launch with a new title and due date → `create_issue` with label "Ideas" (error
+  listing "Content", "Bug") → `archive_project` Launch (2 issues moved) → `search_issues` "launch" and "acme-2"
+  → `get_workspace` and `get_issue` confirming the state. In the browser: ACME in the sidebar with "Marketing
+  site" only, the list with label chips and due dates, the settings page with kind Client, the teal project and
+  the new context doc ("Edited just now by Kris"), and ACME-1's activity: created, renamed, due date set, moved
+  from Marketing site to Launch, removed from Launch, each "via MCP". Screenshots
+  `docs/screenshots/mcp-more-{space,issue,space-settings}-{light,dark}.png`.
+- Not verified: a real Claude Code or Cursor session using the new tools (only the SDK client this time), and
+  anything on a deployed instance.
+
+## Delete issues, edit statuses, un-archive projects (27 Oct 2026, branch `feat/delete-statuses-unarchive`)
+
+Kris reversed two "not exposed" decisions (deleting issues, editing statuses) and asked for un-archiving projects
+in the app and over MCP. 20 tools now.
+
+| Commit | What |
+|---|---|
+| `77ce5a4` | Backend: `mcp.deleteIssue`, `mcp.updateStatus`, `mcp.reorderStatuses`, `mcp.unarchiveProject`; `lib/organise.ts` gains `restoreProject`, `archivedProjects`, `updateStatus`, `reorderStatuses` (the app's `statuses.update/reorder` now call them); `projects.restore` and `projects.listArchived`; `deleteIssue` reports what it removed |
+| `f133cd3` | `packages/mcp`: the four tools; `archive_project` no longer `destructiveHint` |
+| `19eb5cf` | Space settings → Projects → Archived (collapsed, count) with Restore; screenshots `unarchive-*` |
+
+**New tools**
+- `delete_issue { key, confirm }`: the app's hard delete (sub-issues, comments and activity go too), through the
+  same helper. `confirm` must repeat the key, else "Nothing deleted…". Returns `{ deleted, title, subIssues,
+  comments }`. `destructiveHint: true`; the description says it can't be undone and to ask first unless the
+  person asked for this delete, and suggests a done/canceled status instead.
+- `update_status { status, name?, color? }`: rename or recolour a status definition. Colours: palette names or
+  `"default"` (the category's own colour, the app picker's "Default" swatch).
+- `reorder_statuses { statuses }`: every status name once, in the new order.
+- `unarchive_project { space, project, name? }`: restore; `name` restores under a new name.
+- Descriptions of `update_issue`, `update_status` and `reorder_statuses` point at each other: moving one issue vs
+  changing the definitions.
+
+**Un-archive behaviour.** A restored project goes to the end of the space's project list and shows in the sidebar
+and pickers again (live). Issues that lost it when it was archived stay without a project: archiving cleared
+them and nothing records which they were, so nothing is reconstructed; the UI and tool descriptions say so.
+Refused in an archived space.
+
+**Name clash (decision for Kris).** Names are unique among a space's active projects, so restoring "Website" while
+an active "Website" exists is refused: "There's already an active project called Website in Pantry. Rename one of
+them first, then restore." I picked refuse-and-rename over a "restore as…" dialog because Space settings already
+renames projects inline: archived rows keep an editable name, so the fix is rename, then Restore, with no new
+dialog. `projects.restore` and `unarchive_project` also take an optional `name` to restore under a new name in
+one step. With two archived projects of the same name, MCP restores the most recently archived one.
+
+**Permissions.** As in the app, any member (not owner-only): tested with the partner's token / identity.
+
+### How it was verified
+
+- `pnpm check` passes. Backend 174 tests (17 new: `projects-restore.test.ts` for order, issues staying
+  project-less, the clash and rename paths, archived space, member parity, cross-workspace; and
+  `mcp-delete-statuses.test.ts` for revoked tokens, the confirm guard, sub-issues/comments/activity removed,
+  cross-workspace, status rename/recolour/"default"/clash/palette errors, reorder validation, unarchive with and
+  without a clash). `packages/mcp` 31 handler tests (20 tools listed, pass-through and zod refusals for the four).
+- End to end (production build :3300, fresh anonymous backend :3330/:3331, token from the UI, MCP client SDK):
+  - Status definitions: with the list, board and Settings → Statuses open in a browser, `update_status` In Review
+    → "Needs review" (pink) and Todo → "Up next" (blue), a bad name and an incomplete reorder refused with the
+    valid names, then `reorder_statuses` [Up next, In Progress, Needs review, Backlog, Done, Canceled]. Without a
+    reload, list groups, board columns and the settings rows all showed the new names and order.
+  - `delete_issue` PAN-3 (two sub-issues, two comments): `confirm: "yes"` and `confirm: "PAN-4"` refused, nothing
+    deleted; `confirm: "PAN-3"` → `{ subIssues: [PAN-4, PAN-5], comments: 2 }`; `get_issue PAN-4` → not found.
+  - `archive_project` Launch → PAN-2 lost its project → `unarchive_project` → project back, PAN-2 still without
+    one (as designed) → a second unarchive says "Launch isn't archived".
+  - Browser: archived Website and Launch from Space settings, opened Archived (Enter on the toggle), restored
+    Launch (sidebar updated live); added an active "Website", Restore on the archived one showed the clash
+    message and left it archived; renamed it inline to "Website (2025)", Restore worked; sidebar and the list's
+    Project filter showed Launch, Website and Website (2025).
+- Not verified: Safari/Firefox, a real Claude Code or Cursor session with these tools, anything on a deployed
+  instance.

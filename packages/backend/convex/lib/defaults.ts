@@ -27,6 +27,9 @@ export const SAMPLE_SPACE = {
   key: brand.defaultKey,
 };
 
+/** The starter context doc's placeholder sentence; onboarding replaces it with a one-line summary. */
+export const CONTEXT_DOC_PLACEHOLDER = "One or two sentences on what you're building and for whom.";
+
 export const SAMPLE_CONTEXT_DOC = `# Space context
 
 Agents read this before they start work on an issue in this space (MCP \`get_space_context\`).
@@ -34,7 +37,7 @@ Keep it short and current.
 
 ## What this space is
 
-One or two sentences on what you're building and for whom.
+${CONTEXT_DOC_PLACEHOLDER}
 
 ## How to work here
 

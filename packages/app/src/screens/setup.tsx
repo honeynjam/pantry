@@ -189,7 +189,7 @@ function CreateWorkspace({ state }: { state: Extract<EntryState, { kind: "needs-
               autoFocus={state.signedIn}
             />
             <FieldDescription>
-              Optional. You also get a sample project, {brand.defaultKey}, with its context doc.
+              Optional. Next, a few quick questions to set it up for how you work.
             </FieldDescription>
           </Field>
           <FormError message={error} />

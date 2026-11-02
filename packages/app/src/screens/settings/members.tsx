@@ -56,11 +56,22 @@ export function MembersSettings({ data }: { data: WorkspaceData }) {
 
 type CreatedInvite = { email: string; link: string; expiresAt: number };
 
-function InviteForm() {
+/**
+ * Owner only: one email at a time, each giving a link to copy and send yourself (nothing is
+ * emailed). Links created while the form is open stay listed, newest first, so inviting a few
+ * people in a row doesn't lose the earlier links. Used by Settings → Members and onboarding.
+ */
+export function InviteForm({
+  title = "Invite someone",
+  autoFocus = false,
+}: {
+  title?: string;
+  autoFocus?: boolean;
+}) {
   const createInvite = useAction(api.invites.create);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [created, setCreated] = useState<CreatedInvite | null>(null);
+  const [created, setCreated] = useState<CreatedInvite[]>([]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -74,7 +85,8 @@ function InviteForm() {
       const link =
         result.url ??
         `${window.location.origin}/sign-up?invite=${encodeURIComponent(result.token)}`;
-      setCreated({ email: email.toLowerCase(), link, expiresAt: result.expiresAt });
+      const invite = { email: email.toLowerCase(), link, expiresAt: result.expiresAt };
+      setCreated((list) => [invite, ...list.filter((item) => item.email !== invite.email)]);
       formElement.reset();
     } catch (err) {
       setError(describeError(err, "Couldn't create the invite. Try again."));
@@ -84,7 +96,7 @@ function InviteForm() {
   }
 
   return (
-    <SettingsGroup title="Invite someone">
+    <SettingsGroup title={title}>
       <div className="border-border flex flex-col gap-3 rounded-lg border p-3">
         <form onSubmit={onSubmit} className="flex items-center gap-2">
           <div className="relative min-w-0 flex-1">
@@ -99,6 +111,7 @@ function InviteForm() {
               placeholder="partner@example.com"
               aria-label="Email address to invite"
               autoComplete="off"
+              autoFocus={autoFocus}
               className="pl-8"
             />
           </div>
@@ -108,23 +121,34 @@ function InviteForm() {
           </Button>
         </form>
         <FormError message={error} />
-        {created ? (
+        {created.length > 0 ? (
           <div className="bg-gray-2 flex flex-col gap-2 rounded-md p-2.5" role="status">
-            <div className="border-border bg-background flex items-center gap-1 rounded-md border py-0.5 pr-0.5 pl-2.5">
-              <code
-                className="text-foreground min-w-0 flex-1 truncate font-mono text-xs"
-                title={created.link}
-              >
-                {created.link}
-              </code>
-              <CopyButton text={created.link} label="Copy invite link" variant="secondary">
-                Copy link
-              </CopyButton>
-            </div>
+            {created.map((invite) => (
+              <div key={invite.link} className="flex flex-col gap-1">
+                <span className="text-muted-foreground text-xs">
+                  For <span className="text-foreground">{invite.email}</span>
+                </span>
+                <div className="border-border bg-background flex items-center gap-1 rounded-md border py-0.5 pr-0.5 pl-2.5">
+                  <code
+                    className="text-foreground min-w-0 flex-1 truncate font-mono text-xs"
+                    title={invite.link}
+                  >
+                    {invite.link}
+                  </code>
+                  <CopyButton
+                    text={invite.link}
+                    label={`Copy invite link for ${invite.email}`}
+                    variant="secondary"
+                  >
+                    Copy link
+                  </CopyButton>
+                </div>
+              </div>
+            ))}
             <p className="text-muted-foreground text-xs">
-              Send this link to <span className="text-foreground">{created.email}</span> yourself;
-              nothing is emailed. It works once, for that address, until{" "}
-              {fullDate(created.expiresAt)}. You won&apos;t see it again: create a new one if it
+              Send {created.length === 1 ? "this link" : "each link"} yourself; nothing is emailed.
+              Each works once, for its address, until {fullDate(created[0]!.expiresAt)}. You
+              won&apos;t see {created.length === 1 ? "it" : "them"} again: create a new one if one
               gets lost.
             </p>
           </div>
@@ -139,7 +163,7 @@ function InviteForm() {
   );
 }
 
-function InviteList({ data }: { data: WorkspaceData }) {
+export function InviteList({ data }: { data: WorkspaceData }) {
   const invites = useQuery(api.invites.list);
   const revoke = useMutation(api.invites.revoke);
   const [revoking, setRevoking] = useState<Id<"invites"> | null>(null);

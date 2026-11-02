@@ -44,9 +44,8 @@ fields were added. It runs on the Spaces release's transitional schema, so `migr
    It's added with **local** scope by default, so it works only in the folder you ran it in. Add `--scope user`
    to use Pantry in every project. Don't use `--scope project`: that writes the token into a `.mcp.json` file
    you might commit.
-2. Run `claude mcp list` and check that `pantry` shows **✓ Connected**. Inside a session, `/mcp` lists its seven
-   tools: `get_issue`, `get_space_context`, `list_issues`, `create_issue`, `create_sub_issue`, `add_comment`,
-   `update_issue`.
+2. Run `claude mcp list` and check that `pantry` shows **✓ Connected**. Inside a session, `/mcp` lists its 16
+   tools (see "What agents can do" below).
 3. Pick a real issue in Todo, say `PAN-N`. (Fill in PAN's context doc first if it's still the template; the agent
    reads it.) Start `claude` in the repo and say:
 
@@ -86,7 +85,7 @@ fields were added. It runs on the Spaces release's transitional schema, so `migr
    these:
    - start Cursor from a terminal that has it: `export PANTRY_TOKEN=pan_…` then `cursor .`;
    - or run `launchctl setenv PANTRY_TOKEN pan_…` and restart Cursor (this lasts until you log out).
-4. Open Cursor Settings → MCP (Tools & Integrations). `pantry` should be green with seven tools. If it's red and
+4. Open Cursor Settings → MCP (Tools & Integrations). `pantry` should be green with 16 tools. If it's red and
    the log shows 401, the variable didn't reach Cursor.
 5. In Agent chat, run the same script on a different issue, then check the browser the same way as in step 2.4.
 
@@ -110,6 +109,28 @@ checked in the spec on 26 Oct 2026).
    mcp-handler's wording, not a sign that the header is missing.
 3. Keep the Claude Code token if you're going to keep using it.
 
+## What agents can do
+
+Everything a member can do in the app, as you and tagged "via MCP", except the things listed last.
+
+- **Find their way:** `get_workspace` (spaces, projects, statuses, labels, people), `get_space_context`,
+  `list_issues` (filters), `search_issues` (key or title words).
+- **Work an issue:** `get_issue`, `update_issue` (status, title, description, priority, assignee, labels,
+  project, due date), `add_comment`, `create_sub_issue`, `create_issue`.
+- **Organise:** `create_space` and `update_space` (name, kind; the key is fixed), `update_space_context`,
+  `create_project`, `update_project` (rename, recolour), `archive_project` (its issues stay in the space) and
+  `unarchive_project` (the project comes back; its old issues don't), `create_label`, `update_status` (rename or
+  recolour a status for everyone) and `reorder_statuses`.
+- **Delete an issue:** `delete_issue { key, confirm }` deletes it with its sub-issues and comments, only when
+  `confirm` repeats the key. Agents are told to ask you first unless you asked for the delete.
+- **Not over MCP:** deleting spaces, comments or labels; archiving spaces; adding or removing statuses; invites,
+  members and API tokens. Agents are told to ask you.
+
+Optional extra check for the organising tools (any client): "Set up a space ACME for client work with projects
+Website and Launch, write its context doc, file three issues across them with labels and due dates, then archive
+Launch." Afterwards ACME's settings show the projects and doc, and each issue's activity says "via MCP". Archive
+or rename the space in the app afterwards if you don't want to keep it.
+
 ## Troubleshooting
 
 | Symptom | Likely cause |
@@ -124,7 +145,7 @@ checked in the spec on 26 Oct 2026).
 
 | Check | Claude Code | Cursor |
 |---|---|---|
-| Server connects, 7 tools listed | | |
+| Server connects, 16 tools listed | | |
 | Reads the issue (`get_issue`) | | |
 | Reads the context doc (`get_space_context`) | | |
 | Moves it to In Progress, shown "via MCP" under your name | | |

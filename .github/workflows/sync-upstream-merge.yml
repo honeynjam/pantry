@@ -1,0 +1,46 @@
+# Automatic updates where GitHub's own auto-merge isn't available (private repos on GitHub Free): when a CI run
+# finishes on a Sync upstream branch, this merges the update PR if Sync upstream marked it for that exact commit
+# and CI passed on it. If CI failed, it comments and leaves the PR open. All the checks are in
+# scripts/sync-self-merge.sh. Only acts with SYNC_AUTO_MERGE=true and the SYNC_UPSTREAM_TOKEN secret (its merge
+# starts the Vercel deploy and the Watch update deploys workflow). Does nothing in honeynjam/pantry itself.
+name: Sync upstream merge
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: sync-upstream-merge-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    name: Merge the update once CI passes
+    # Expression string comparison ignores case, so this also skips Honeynjam/pantry and SYNC_AUTO_MERGE=True works.
+    if: >-
+      github.repository != 'honeynjam/pantry' && vars.SYNC_AUTO_MERGE == 'true' &&
+      startsWith(github.event.workflow_run.head_branch, 'sync-upstream/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # The default branch's copy of the script, never the PR's.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts
+
+      - name: Merge if CI passed
+        env:
+          GH_TOKEN: ${{ secrets.SYNC_UPSTREAM_TOKEN }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::notice::SYNC_UPSTREAM_TOKEN isn't set, so updates can't merge themselves (the PR says how to fix it)."
+            exit 0
+          fi
+          bash scripts/sync-self-merge.sh "$HEAD_SHA"

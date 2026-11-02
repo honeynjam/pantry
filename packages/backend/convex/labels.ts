@@ -1,37 +1,18 @@
 import { v } from "convex/values";
-import type { Doc, Id } from "./_generated/dataModel";
-import { mutation, type MutationCtx } from "./_generated/server";
+import type { Doc } from "./_generated/dataModel";
+import { mutation } from "./_generated/server";
 import { logActivity } from "./lib/activity";
 import { requireMember } from "./lib/auth";
-import { fail, notFound } from "./lib/errors";
+import { notFound } from "./lib/errors";
+import { assertLabelNameFree, createLabel, workspaceLabelRows } from "./lib/organise";
 import { checkColor, cleanName } from "./lib/validate";
-
-async function workspaceLabels(ctx: MutationCtx, workspaceId: Id<"workspaces">) {
-  return ctx.db
-    .query("labels")
-    .withIndex("by_workspace", (q) => q.eq("workspaceId", workspaceId))
-    .collect();
-}
-
-/** Label names are unique per workspace, ignoring case: agents pick labels by name over MCP. */
-function assertNameFree(labels: Doc<"labels">[], name: string, except?: Id<"labels">) {
-  const clash = labels.find(
-    (label) => label._id !== except && label.name.toLowerCase() === name.toLowerCase(),
-  );
-  if (clash) fail("NAME_TAKEN", `There's already a label called ${clash.name}.`);
-}
 
 export const create = mutation({
   args: { name: v.string(), color: v.string() },
   handler: async (ctx, args) => {
     const me = await requireMember(ctx);
-    const name = cleanName(args.name, "Label name", 40);
-    assertNameFree(await workspaceLabels(ctx, me.workspaceId), name);
-    return ctx.db.insert("labels", {
-      workspaceId: me.workspaceId,
-      name,
-      color: checkColor(args.color),
-    });
+    const { labelId } = await createLabel(ctx, me.workspaceId, args);
+    return labelId;
   },
 });
 
@@ -44,7 +25,7 @@ export const update = mutation({
     const patch: Partial<Doc<"labels">> = {};
     if (args.name !== undefined) {
       patch.name = cleanName(args.name, "Label name", 40);
-      assertNameFree(await workspaceLabels(ctx, me.workspaceId), patch.name, label._id);
+      assertLabelNameFree(await workspaceLabelRows(ctx, me.workspaceId), patch.name, label._id);
     }
     if (args.color !== undefined) patch.color = checkColor(args.color);
     await ctx.db.patch("labels", label._id, patch);
@@ -63,7 +44,7 @@ export const remove = mutation({
     if (!label || label.workspaceId !== me.workspaceId) return notFound("Label");
 
     const names = new Map(
-      (await workspaceLabels(ctx, me.workspaceId)).map((row) => [row._id, row.name]),
+      (await workspaceLabelRows(ctx, me.workspaceId)).map((row) => [row._id, row.name]),
     );
     const issues = await ctx.db
       .query("issues")

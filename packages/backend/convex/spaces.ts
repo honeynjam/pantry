@@ -2,10 +2,8 @@ import { v } from "convex/values";
 import { mutation } from "./_generated/server";
 import { requireMember } from "./lib/auth";
 import { avatarValidator } from "./lib/avatar";
-import { SAMPLE_CONTEXT_DOC } from "./lib/defaults";
-import { fail } from "./lib/errors";
+import { createSpace, updateSpace } from "./lib/organise";
 import { getSpace } from "./lib/spaces";
-import { cleanName, SPACE_KEY_PATTERN } from "./lib/validate";
 import { spaceKind } from "./schema";
 
 /**
@@ -22,58 +20,26 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     const me = await requireMember(ctx);
-    const name = cleanName(args.name, "Space name");
-    const key = args.key.trim().toUpperCase();
-    if (!SPACE_KEY_PATTERN.test(key)) {
-      fail(
-        "INVALID_KEY",
-        "Keys are 2–10 letters or digits and start with a letter, like PAN or WEB2.",
-      );
-    }
-    const taken = await ctx.db
-      .query("spaces")
-      .withIndex("by_workspace_and_key", (q) => q.eq("workspaceId", me.workspaceId).eq("key", key))
-      .first();
-    if (taken) {
-      fail(
-        "KEY_TAKEN",
-        taken.archivedAt === undefined
-          ? `${key} is already the key of ${taken.name}.`
-          : `${key} belongs to an archived space (${taken.name}). Pick another key.`,
-      );
-    }
-
-    const spaceId = await ctx.db.insert("spaces", {
-      workspaceId: me.workspaceId,
-      name,
-      key,
-      nextIssueNumber: 1,
-      ...(args.kind && args.kind !== "product" ? { kind: args.kind } : {}),
-      ...(args.avatar ? { avatar: args.avatar } : {}),
-    });
-    await ctx.db.insert("docs", {
-      workspaceId: me.workspaceId,
-      spaceId,
-      kind: "space_context",
-      title: `${name} context`,
-      body: SAMPLE_CONTEXT_DOC,
-      updatedBy: me._id,
-      updatedAt: Date.now(),
-    });
+    const { spaceId, key } = await createSpace(ctx, me, args);
     return { spaceId, key };
   },
 });
 
-/** Rename or change kind. The key can't change (issue keys and agents' references depend on it). */
+/**
+ * Rename or change kind; the key can change only while the space has never had an issue (onboarding
+ * renames the untouched sample space this way). After that, issue keys and agents depend on it.
+ */
 export const update = mutation({
-  args: { spaceId: v.id("spaces"), name: v.optional(v.string()), kind: v.optional(spaceKind) },
+  args: {
+    spaceId: v.id("spaces"),
+    name: v.optional(v.string()),
+    kind: v.optional(spaceKind),
+    key: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
     const me = await requireMember(ctx);
-    await getSpace(ctx, me.workspaceId, args.spaceId);
-    await ctx.db.patch("spaces", args.spaceId, {
-      ...(args.name !== undefined ? { name: cleanName(args.name, "Space name") } : {}),
-      ...(args.kind !== undefined ? { kind: args.kind } : {}),
-    });
+    const space = await getSpace(ctx, me.workspaceId, args.spaceId);
+    await updateSpace(ctx, space, args);
   },
 });
 

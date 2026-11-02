@@ -49,6 +49,7 @@ import { useStable } from "../lib/stable";
 import { routes, useNavigation } from "../navigation";
 import { LoadingScreen } from "../screens/loading";
 import { AppCommandsProvider, useAppCommands } from "./app-commands";
+import { groupSpaces, KIND_LABEL, modeOf } from "../lib/vocabulary";
 import { projectColor } from "./space-color";
 import { UserMenu } from "./user-menu";
 
@@ -258,23 +259,29 @@ function AppSidebar({ data }: { data: WorkspaceData }) {
             </NavItem>
           </SidebarMenu>
         </SidebarGroup>
-        <SidebarGroup>
-          <SidebarGroupLabel>Spaces</SidebarGroupLabel>
-          <SidebarGroupAction title="New space" aria-label="New space" onClick={newSpace}>
-            <PlusIcon />
-          </SidebarGroupAction>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {data.spaces.map((space) => (
-                <SpaceNavItem
-                  key={space._id}
-                  space={space}
-                  projects={data.projects.filter((project) => project.spaceId === space._id)}
-                />
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {groupSpaces(modeOf(data.workspace), data.spaces).map((group) => (
+          <SidebarGroup key={group.kind}>
+            <SidebarGroupLabel>{group.heading}</SidebarGroupLabel>
+            <SidebarGroupAction
+              title={`New ${KIND_LABEL[group.kind].one.toLowerCase()}`}
+              aria-label={`New ${KIND_LABEL[group.kind].one.toLowerCase()}`}
+              onClick={() => newSpace(group.kind)}
+            >
+              <PlusIcon />
+            </SidebarGroupAction>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.spaces.map((space) => (
+                  <SpaceNavItem
+                    key={space._id}
+                    space={space}
+                    projects={data.projects.filter((project) => project.spaceId === space._id)}
+                  />
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
@@ -287,7 +294,7 @@ function AppSidebar({ data }: { data: WorkspaceData }) {
             <span>Settings</span>
           </NavItem>
           <SidebarMenuItem>
-            <UserMenu displayName={data.me.displayName} />
+            <UserMenu displayName={data.me.displayName} isOwner={data.me.role === "owner"} />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
@@ -330,9 +337,16 @@ export function AppShell({
   // Stable: a change to one space or member doesn't hand every screen new statuses, labels, members.
   const data = useStable(useQuery(api.workspace.current));
   const [open, setOpen] = useState(readSidebarOpen);
+  const { navigate } = useNavigation();
   // C opens the new-issue dialog from anywhere: have its editor ready by then.
   useEffect(() => whenIdle(preloadMarkdownEditor), []);
-  if (data === undefined)
+  // Members who haven't been through onboarding (new owners, new members, and everyone once after
+  // the release that added it) go there first. The flag comes with workspace.current: no extra read.
+  const needsOnboarding = data !== undefined && data.me.onboardedAt === undefined;
+  useEffect(() => {
+    if (needsOnboarding) navigate(routes.welcome, { replace: true });
+  }, [needsOnboarding, navigate]);
+  if (data === undefined || needsOnboarding)
     return <LoadingScreen diagnostics={() => ({ waitingFor: "workspace.current" })} />;
   return (
     <SidebarProvider

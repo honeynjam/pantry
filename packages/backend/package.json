@@ -1,6 +1,6 @@
 {
   "name": "@pantry/backend",
-  "version": "0.0.1",
+  "version": "0.1.21",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -12,7 +12,8 @@
     "./model": "./convex/lib/model.ts",
     "./priority": "./convex/lib/priority.ts",
     "./rules": "./convex/lib/rules.ts",
-    "./tokens": "./convex/lib/tokens.ts"
+    "./tokens": "./convex/lib/tokens.ts",
+    "./validate": "./convex/lib/validate.ts"
   },
   "scripts": {
     "dev": "CONVEX_AGENT_MODE=${CONVEX_AGENT_MODE-anonymous} convex dev --run migrations:run",

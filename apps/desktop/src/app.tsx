@@ -7,6 +7,7 @@ import {
   SetupPage,
   SignInPage,
   SignUpPage,
+  WelcomePage,
 } from "@pantry/app";
 import { Toaster } from "@pantry/ui/components/sonner";
 import { TooltipProvider } from "@pantry/ui/components/tooltip";
@@ -51,6 +52,8 @@ function Routes() {
         <SignUpPage />
       ) : pathname === routes.setup ? (
         <SetupPage />
+      ) : pathname === routes.welcome ? (
+        <WelcomePage />
       ) : spaceKey ? (
         <SpacePage spaceKey={decodeURIComponent(spaceKey)} />
       ) : (

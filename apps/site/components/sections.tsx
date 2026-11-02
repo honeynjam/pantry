@@ -1,4 +1,5 @@
 import * as React from "react";
+import Link from "next/link";
 import { GitPullRequest } from "lucide-react";
 import { cn } from "@pantry/ui/lib/utils";
 import {
@@ -18,6 +19,7 @@ import { CtaRow, DemoLink, RunsOn } from "./cta";
 import { Keys } from "./keys";
 import * as Logos from "./logos";
 import { McpConfig } from "./mcp-config";
+import { TOOL_NAMES as toolNames } from "@/lib/docs/mcp";
 import { AgentMockup } from "./mockups/agent-mockup";
 import { DeployMockup } from "./mockups/deploy-mockup";
 import { HeroMockup } from "./mockups/hero-mockup";
@@ -158,10 +160,10 @@ export function Agents() {
         </div>
         <div className="mt-6 grid items-stretch gap-6 lg:grid-cols-[1fr_1.4fr]">
           <FadeUp className="border-border rounded-2xl border p-6 sm:p-8">
-            <h3 className="text-lg font-medium">{mcp.toolsLabel}</h3>
+            <h3 className="text-lg font-medium">{mcp.toolsLabel(toolNames.length)}</h3>
             <p className="text-body text-muted-foreground mt-2">{mcp.toolsBody}</p>
             <ul className="mt-6 flex flex-wrap gap-2">
-              {mcp.tools.map((tool) => (
+              {toolNames.map((tool) => (
                 <li
                   key={tool}
                   className="border-border bg-gray-2 text-gray-11 rounded-md border px-2.5 py-1 font-mono text-xs"
@@ -170,6 +172,12 @@ export function Agents() {
                 </li>
               ))}
             </ul>
+            <Link
+              href="/docs/mcp-tools"
+              className="text-muted-foreground hover:text-foreground mt-6 inline-flex items-center gap-1 text-sm transition-colors"
+            >
+              {mcp.toolsLink} →
+            </Link>
           </FadeUp>
           <FadeUp index={1}>
             <McpConfig />

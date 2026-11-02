@@ -6,6 +6,7 @@ import {
   CircleDashedIcon,
   FolderIcon,
   KeyRoundIcon,
+  SlidersHorizontalIcon,
   TagIcon,
   UsersIcon,
   type LucideIcon,
@@ -15,6 +16,8 @@ import { EntryGate } from "../../entry";
 import { routes, useNavigation, type SettingsSection } from "../../navigation";
 import { AppShell, type WorkspaceData } from "../../shell/app-shell";
 import { NotMemberScreen } from "../not-member";
+import { modeOf, vocabulary } from "../../lib/vocabulary";
+import { GeneralSettings } from "./general";
 import { LabelsSettings } from "./labels";
 import { MembersSettings } from "./members";
 import { SpacesSettings } from "./spaces";
@@ -23,13 +26,21 @@ import { TokensSettings } from "./tokens";
 
 type SectionDef = {
   id: SettingsSection;
-  label: string;
+  /** Spaces are "Products", "Clients" or both, by the workspace's mode. */
+  label: string | ((data: WorkspaceData) => string);
   icon: LucideIcon;
   group: "Workspace" | "Account";
   render: (data: WorkspaceData) => ReactNode;
 };
 
 const SECTIONS: SectionDef[] = [
+  {
+    id: "general",
+    label: "General",
+    icon: SlidersHorizontalIcon,
+    group: "Workspace",
+    render: (data) => <GeneralSettings data={data} />,
+  },
   {
     id: "members",
     label: "Members",
@@ -39,7 +50,7 @@ const SECTIONS: SectionDef[] = [
   },
   {
     id: "spaces",
-    label: "Spaces",
+    label: (data) => vocabulary(modeOf(data.workspace)).many,
     icon: FolderIcon,
     group: "Workspace",
     render: (data) => <SpacesSettings data={data} />,
@@ -79,19 +90,21 @@ export function SettingsPage({ section }: { section: string }) {
           <NotMemberScreen />
         ) : (
           <AppShell
-            title={() => (
+            title={(data) => (
               <>
                 <span className="text-muted-foreground">Settings</span>
                 <span className="text-faint-foreground" aria-hidden>
                   /
                 </span>
-                <span className="text-foreground font-medium">{current?.label ?? "Not found"}</span>
+                <span className="text-foreground font-medium">
+                  {current ? labelOf(current, data) : "Not found"}
+                </span>
               </>
             )}
           >
             {(data) => (
               <div className="flex min-h-0 flex-1 flex-col md:flex-row">
-                <SettingsNav active={current?.id} />
+                <SettingsNav active={current?.id} data={data} />
                 <div className="flex min-w-0 flex-1 justify-center overflow-y-auto px-6 py-8 md:px-10">
                   {current ? (
                     current.render(data)
@@ -110,7 +123,16 @@ export function SettingsPage({ section }: { section: string }) {
   );
 }
 
-function SettingsNav({ active }: { active: SettingsSection | undefined }) {
+const labelOf = (item: SectionDef, data: WorkspaceData) =>
+  typeof item.label === "string" ? item.label : item.label(data);
+
+function SettingsNav({
+  active,
+  data,
+}: {
+  active: SettingsSection | undefined;
+  data: WorkspaceData;
+}) {
   return (
     <nav
       aria-label="Settings"
@@ -123,6 +145,7 @@ function SettingsNav({ active }: { active: SettingsSection | undefined }) {
           first={index === 0}
           items={SECTIONS.filter((item) => item.group === group)}
           active={active}
+          data={data}
         />
       ))}
     </nav>
@@ -134,11 +157,13 @@ function SettingsNavGroup({
   first,
   items,
   active,
+  data,
 }: {
   title: string;
   first: boolean;
   items: SectionDef[];
   active: SettingsSection | undefined;
+  data: WorkspaceData;
 }) {
   const { Link } = useNavigation();
   const transition = useMotionTransition(spring.morph);
@@ -176,7 +201,7 @@ function SettingsNavGroup({
               />
             )}
             <Icon className="relative size-3.5" aria-hidden />
-            <span className="relative">{item.label}</span>
+            <span className="relative">{labelOf(item, data)}</span>
           </Link>
         );
       })}

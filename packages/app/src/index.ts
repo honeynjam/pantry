@@ -25,3 +25,4 @@ export { SpaceSettingsPage } from "./screens/space-settings";
 export { IssuePage } from "./screens/issue";
 export { BoardPage } from "./screens/board";
 export { MyIssuesPage } from "./screens/my-issues";
+export { WelcomePage } from "./screens/welcome";

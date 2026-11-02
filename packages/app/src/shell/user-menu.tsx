@@ -20,13 +20,14 @@ import {
   LogOutIcon,
   MonitorIcon,
   MoonIcon,
+  RotateCcwIcon,
   SunIcon,
 } from "lucide-react";
 import { routes, useNavigation } from "../navigation";
 import { useAuthClient } from "../providers";
 
-/** Footer button: who's signed in, theme choice and sign out. */
-export function UserMenu({ displayName }: { displayName: string }) {
+/** Footer button: who's signed in, theme choice, onboarding again and sign out. */
+export function UserMenu({ displayName, isOwner }: { displayName: string; isOwner: boolean }) {
   const authClient = useAuthClient();
   const session = authClient.useSession();
   const { theme, setTheme } = useTheme();
@@ -73,6 +74,10 @@ export function UserMenu({ displayName }: { displayName: string }) {
         <DropdownMenuItem onClick={() => navigate(routes.settings("tokens"))}>
           <KeyRoundIcon />
           API tokens
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => navigate(routes.welcomeAgain)}>
+          <RotateCcwIcon />
+          {isOwner ? "Run setup again" : "Show onboarding"}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => void authClient.signOut()}>
           <LogOutIcon />

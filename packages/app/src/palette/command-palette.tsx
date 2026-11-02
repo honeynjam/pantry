@@ -33,12 +33,14 @@ import {
   MoonIcon,
   PanelLeftIcon,
   PlusIcon,
+  RotateCcwIcon,
   SunIcon,
   TagIcon,
   UsersIcon,
 } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { SpaceAvatar } from "../components/space-avatar";
+import { KIND_LABEL, kindOf, modeOf, vocabulary } from "../lib/vocabulary";
 import { statusColor } from "../issues/lookups";
 import { routes, useNavigation, type SettingsSection } from "../navigation";
 import { useAuthClient } from "../providers";
@@ -155,6 +157,8 @@ function PaletteBody({
       run: () => navigate(routes.settings(section)),
     });
     const space = currentSpace;
+    const words = vocabulary(modeOf(data.workspace));
+    const isOwner = data.me.role === "owner";
     const spaceById = new Map(data.spaces.map((row) => [row._id, row]));
     const exactKey = KEY_PATTERN.test(query.trim()) ? query.trim().toUpperCase() : null;
     return [
@@ -233,7 +237,7 @@ function PaletteBody({
             } satisfies Row,
             {
               id: "nav:space-settings",
-              label: "Space settings",
+              label: `${KIND_LABEL[kindOf(space)].one} settings`,
               group: "Navigation",
               description: space.name,
               keywords: ["context doc", "projects", "rename", "archive", "kind", "client"],
@@ -243,7 +247,7 @@ function PaletteBody({
           ]
         : []),
       settings("members", "Members and invites", <UsersIcon />, ["invite", "people"]),
-      settings("spaces", "Spaces", <FolderIcon />, ["archive", "products", "clients"]),
+      settings("spaces", words.many, <FolderIcon />, ["spaces", "archive", "products", "clients"]),
       settings("labels", "Labels", <TagIcon />, ["tags", "colours", "colors"]),
       settings("statuses", "Statuses", <CogIcon />, ["workflow", "columns"]),
       settings("tokens", "API tokens", <KeyRoundIcon />, [
@@ -266,10 +270,10 @@ function PaletteBody({
       ...screenActions(),
       {
         id: "action:new-space",
-        label: "New space",
+        label: words.newLabel,
         group: "Actions",
-        description: "A product or a client",
-        keywords: ["create", "add", "product", "client"],
+        description: words.asksKind ? "Asks which" : undefined,
+        keywords: ["create", "add", "space", "product", "client"],
         icon: <FolderIcon />,
         run: () => commands.newSpace(),
       },
@@ -294,6 +298,14 @@ function PaletteBody({
         icon: <KeyboardIcon />,
         shortcut: "help",
         run: () => commands.openHelp(),
+      },
+      {
+        id: "action:onboarding",
+        label: isOwner ? "Run setup again" : "Show onboarding",
+        group: "Actions",
+        keywords: ["onboarding", "setup", "welcome", "tour", "start"],
+        icon: <RotateCcwIcon />,
+        run: () => navigate(routes.welcomeAgain),
       },
       {
         id: "action:sidebar",
@@ -340,6 +352,7 @@ function PaletteBody({
   })();
 
   const groups = rankGroups(rows, query, GROUPS);
+  const spaceHeading = vocabulary(modeOf(data.workspace)).many;
   // An exact key match (`PAN-42`) leads, with its group.
   for (const group of groups) {
     group.items.sort((a, b) => (b.item.boost ?? 0) - (a.item.boost ?? 0));
@@ -374,7 +387,10 @@ function PaletteBody({
           {query.trim() ? `Nothing matches “${query.trim()}”.` : "Type to search."}
         </CommandEmpty>
         {groups.map((group) => (
-          <CommandGroup key={group.group} heading={group.group}>
+          <CommandGroup
+            key={group.group}
+            heading={group.group === "Spaces" ? spaceHeading : group.group}
+          >
             {group.items.map((entry) => (
               <PaletteRow
                 key={entry.item.id}

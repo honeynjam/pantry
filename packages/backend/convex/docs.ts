@@ -1,9 +1,9 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireMember } from "./lib/auth";
-import { fail, notFound } from "./lib/errors";
-
-const MAX_BODY = 100_000;
+import { notFound } from "./lib/errors";
+import { saveSpaceContext } from "./lib/organise";
+import { getSpace } from "./lib/spaces";
 
 /** The space's context doc (agents read it first over MCP). */
 export const getContext = query({
@@ -33,31 +33,7 @@ export const saveContext = mutation({
   args: { spaceId: v.id("spaces"), body: v.string() },
   handler: async (ctx, { spaceId, body }) => {
     const me = await requireMember(ctx);
-    const space = await ctx.db.get("spaces", spaceId);
-    if (!space || space.workspaceId !== me.workspaceId) return notFound("Space");
-    if (body.length > MAX_BODY)
-      fail(
-        "TOO_LONG",
-        `The context doc can be at most ${MAX_BODY.toLocaleString("en")} characters.`,
-      );
-    const doc = await ctx.db
-      .query("docs")
-      .withIndex("by_space_and_kind", (q) => q.eq("spaceId", spaceId).eq("kind", "space_context"))
-      .first();
-    const now = Date.now();
-    if (doc) {
-      if (doc.body === body) return;
-      await ctx.db.patch("docs", doc._id, { body, updatedBy: me._id, updatedAt: now });
-    } else {
-      await ctx.db.insert("docs", {
-        workspaceId: me.workspaceId,
-        spaceId,
-        kind: "space_context",
-        title: `${space.name} context`,
-        body,
-        updatedBy: me._id,
-        updatedAt: now,
-      });
-    }
+    const space = await getSpace(ctx, me.workspaceId, spaceId);
+    await saveSpaceContext(ctx, me, space, body);
   },
 });

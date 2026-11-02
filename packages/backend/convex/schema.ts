@@ -20,6 +20,8 @@ export const priority = v.union(
   v.literal(4),
 );
 export const spaceKind = v.union(v.literal("product"), v.literal("client"));
+/** What the workspace works on (onboarding step 1): the UI's words and defaults follow it. */
+export const workspaceMode = v.union(v.literal("product"), v.literal("client"), v.literal("both"));
 
 /*
  * TRANSITIONAL SCHEMA (the Spaces release). Until every instance has run `migrations:run`, the
@@ -51,10 +53,12 @@ export const projectFields = {
 };
 
 export default defineSchema({
-  workspaces: defineTable({ name: v.string(), slug: v.string(), createdBy: v.string() }).index(
-    "by_slug",
-    ["slug"],
-  ),
+  workspaces: defineTable({
+    name: v.string(),
+    slug: v.string(),
+    createdBy: v.string(),
+    mode: v.optional(workspaceMode), // "product" when missing (workspaces from before onboarding)
+  }).index("by_slug", ["slug"]),
 
   members: defineTable({
     workspaceId: v.id("workspaces"),
@@ -62,6 +66,7 @@ export default defineSchema({
     displayName: v.string(),
     avatarUrl: v.optional(v.string()),
     role: v.union(v.literal("owner"), v.literal("member")),
+    onboardedAt: v.optional(v.number()), // when they finished (or skipped) onboarding; missing = not yet
   })
     // Kept next to by_workspace_and_user (spec §10b): lists members in join order.
     // eslint-disable-next-line @convex-dev/no-duplicate-indexes

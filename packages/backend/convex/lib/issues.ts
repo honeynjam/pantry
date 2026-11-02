@@ -547,13 +547,24 @@ export async function updateIssue(
   }
 }
 
-/** Hard delete (no trash in v0.1) with comments, activity and sub-issues (and theirs). */
-export async function deleteIssue(ctx: MutationCtx, issue: Doc<"issues">) {
+/**
+ * Hard delete (no trash in v0.1) with comments, activity and sub-issues (and theirs). Returns the
+ * sub-issue keys and the number of comments that went with it.
+ */
+export async function deleteIssue(
+  ctx: MutationCtx,
+  issue: Doc<"issues">,
+): Promise<{ subIssues: string[]; comments: number }> {
   const children = await ctx.db
     .query("issues")
     .withIndex("by_parent", (q) => q.eq("parentId", issue._id))
     .collect();
-  for (const child of children) await deleteIssue(ctx, child);
+  const removed = { subIssues: [] as string[], comments: 0 };
+  for (const child of children) {
+    const nested = await deleteIssue(ctx, child);
+    removed.subIssues.push(child.key, ...nested.subIssues);
+    removed.comments += nested.comments;
+  }
   const [comments, activity] = await Promise.all([
     ctx.db
       .query("comments")
@@ -567,4 +578,6 @@ export async function deleteIssue(ctx: MutationCtx, issue: Doc<"issues">) {
   for (const row of comments) await ctx.db.delete("comments", row._id);
   for (const row of activity) await ctx.db.delete("activity", row._id);
   await ctx.db.delete("issues", issue._id);
+  removed.comments += comments.length;
+  return removed;
 }

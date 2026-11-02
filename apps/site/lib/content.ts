@@ -20,7 +20,7 @@ export const links = {
   licence: `${repo}/blob/main/LICENSE`,
   deploy:
     "https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fhoneynjam%2Fpantry&project-name=pantry&repository-name=pantry&root-directory=apps%2Fweb&products=%5B%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22convex%22%2C%22productSlug%22%3A%22convex%22%2C%22protocol%22%3A%22storage%22%7D%5D",
-  deployGuide: `${repo}#deploy-your-own-about-5-minutes`,
+  deployGuide: "/docs/deploy",
   /** The live demo (spec §9f). Hidden until it exists. */
   demo: null as string | null,
 };
@@ -48,8 +48,8 @@ export const nav = {
     ],
   },
   links: [
-    { label: "Docs", href: `${repo}#readme` },
-    { label: "Changelog", href: `${repo}/releases` },
+    { label: "Docs", href: "/docs" },
+    { label: "Changelog", href: "/docs/changelog" },
   ],
 };
 
@@ -99,17 +99,11 @@ export const mcp = {
       body: "Statuses change only when you or your agent change them. No automations to untangle later.",
     },
   ],
-  toolsLabel: "Seven tools",
-  toolsBody: "That's the whole API. Small enough that agents use it well.",
-  tools: [
-    "get_issue",
-    "get_space_context",
-    "list_issues",
-    "create_issue",
-    "create_sub_issue",
-    "add_comment",
-    "update_issue",
-  ],
+  /** The count and names come from packages/mcp (see sections.tsx), so they can't drift. */
+  toolsLabel: (count: number) => `${count} tools`,
+  toolsBody:
+    "Everything an agent needs to work an issue and organise a space. Deleting spaces and managing people stay in the app.",
+  toolsLink: "See every tool",
   configTitle: "Connect in one line",
   configs: [
     {
@@ -219,18 +213,19 @@ export const footer = {
     {
       title: "Product",
       links: [
-        { label: "Agents and MCP", href: "#agents" },
-        { label: "Keyboard first", href: "#speed" },
-        { label: "Mac app", href: "#mac" },
-        { label: "Self-hosting", href: "#self-host" },
+        { label: "Agents and MCP", href: "/#agents" },
+        { label: "Keyboard first", href: "/#speed" },
+        { label: "Mac app", href: "/#mac" },
+        { label: "Self-hosting", href: "/#self-host" },
       ],
     },
     {
       title: "Open source",
       links: [
         { label: "GitHub", href: repo },
-        { label: "Setup guide", href: `${repo}#deploy-your-own-about-5-minutes` },
-        { label: "Changelog", href: `${repo}/releases` },
+        { label: "Docs", href: "/docs" },
+        { label: "Setup guide", href: "/docs/deploy" },
+        { label: "Changelog", href: "/docs/changelog" },
         { label: "MIT licence", href: `${repo}/blob/main/LICENSE` },
       ],
     },

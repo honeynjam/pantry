@@ -1,0 +1,62 @@
+# After a Pantry update merges (an "Update Pantry to vX.Y.Z" PR from Sync upstream), this watches the production
+# deploy Vercel reports on the merge commit, and opens an issue "Pantry vX.Y.Z didn't deploy" if it fails or hasn't
+# finished after 30 minutes. Vercel's build runs the data migration after `convex deploy`; when that fails, the new
+# backend is live with the previous web app, and this is how you hear about it.
+#
+# On by default in copies of Pantry; to turn it off, set the repository variable PANTRY_DEPLOY_WATCH to false.
+# PANTRY_DEPLOY_WATCH_MINUTES changes the time limit. Uses only the built-in token. Does nothing in
+# honeynjam/pantry itself. Logic and tests: scripts/deploy-watch.mjs.
+name: Watch update deploys
+
+on:
+  # A merged update PR: watch until Vercel reports a result or the time limit passes.
+  pull_request:
+    types: [closed]
+  # Vercel reports deploy results as GitHub deployment statuses; this also catches updates that were merged by
+  # the built-in token (auto-merge without SYNC_UPSTREAM_TOKEN), which start no pull_request run.
+  deployment_status:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: "Commit to check (empty = the last merged update)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  deployments: read
+  statuses: read
+  pull-requests: read
+  issues: write
+
+# One watcher per commit at a time, so a failure seen by both triggers opens one issue.
+concurrency:
+  group: deploy-watch-${{ github.event.pull_request.merge_commit_sha || github.event.deployment.sha || inputs.sha || 'latest' }}
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    name: Watch the update's deploy
+    # Expression string comparison ignores case, so this also skips Honeynjam/pantry and PANTRY_DEPLOY_WATCH=False.
+    if: >-
+      github.repository != 'honeynjam/pantry' && vars.PANTRY_DEPLOY_WATCH != 'false' && (
+        github.event_name == 'workflow_dispatch' ||
+        (github.event_name == 'pull_request' && github.event.pull_request.merged &&
+          startsWith(github.event.pull_request.head.ref, 'sync-upstream/')) ||
+        (github.event_name == 'deployment_status' &&
+          (github.event.deployment_status.state == 'failure' || github.event.deployment_status.state == 'error'))
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts
+
+      - name: Watch the deploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_SHA: ${{ inputs.sha }}
+          WATCH_MINUTES: ${{ vars.PANTRY_DEPLOY_WATCH_MINUTES }}
+        run: node scripts/deploy-watch.mjs

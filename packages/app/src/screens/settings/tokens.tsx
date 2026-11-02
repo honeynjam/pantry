@@ -25,7 +25,7 @@ import {
 } from "./mcp-snippets";
 import { SettingsEmpty, SettingsGroup, SettingsList, SettingsPanel, SettingsRow } from "./parts";
 
-type CreatedToken = { name: string; token: string };
+export type CreatedToken = { name: string; token: string };
 type TokenRow = FunctionReturnType<typeof api.tokens.list>[number];
 
 /** User settings → API tokens (spec §6): personal tokens for MCP clients, plus the client snippets. */
@@ -49,12 +49,17 @@ export function TokensSettings() {
   );
 }
 
-function CreateToken({
+export function CreateToken({
   created,
   onCreated,
+  defaultName,
+  autoFocus = false,
 }: {
   created: CreatedToken | null;
   onCreated: (token: CreatedToken) => void;
+  /** Prefills the name (onboarding suggests one). */
+  defaultName?: string;
+  autoFocus?: boolean;
 }) {
   const createToken = useAction(api.tokens.create);
   const [pending, setPending] = useState(false);
@@ -92,8 +97,10 @@ function CreateToken({
               required
               maxLength={60}
               placeholder="Claude Code on my laptop"
+              defaultValue={defaultName}
               aria-label="Token name"
               autoComplete="off"
+              autoFocus={autoFocus}
               className="pl-8"
             />
           </div>
@@ -142,7 +149,7 @@ function Snippet({ text, label }: { text: string; label: string }) {
   );
 }
 
-function ClientSnippets({ url, token }: { url: string; token: string | undefined }) {
+export function ClientSnippets({ url, token }: { url: string; token: string | undefined }) {
   return (
     <SettingsGroup title="Connect an agent">
       <Tabs defaultValue="claude-code" className="border-border rounded-lg border p-3">
