@@ -42,10 +42,10 @@ function team(
   } = {},
 ) {
   return {
-    team: "Shelf",
-    prefix: "SHELF",
+    team: "Acme",
+    prefix: "ACME",
     maxNumber: overrides.maxNumber ?? 30,
-    target: overrides.target ?? { name: "Shelf", key: "SHELF" },
+    target: overrides.target ?? { name: "Acme", key: "ACME" },
     projects: overrides.projects ?? [
       { externalId: "p-1", name: "Launch" },
       { externalId: "p-2", name: "Extension" },
@@ -123,8 +123,8 @@ describe("imports.prepareLinear", () => {
     expect(first.created).toEqual({ spaces: 1, projects: 2, labels: 1 });
     const [prepared] = first.teams;
     expect(prepared).toMatchObject({
-      key: "SHELF",
-      name: "Shelf",
+      key: "ACME",
+      name: "Acme",
       createdSpace: true,
       keepsNumbers: true,
     });
@@ -219,17 +219,17 @@ describe("imports.importLinearIssues", () => {
       labels: ["Bug"],
     });
     const { spaceId, projects } = result.teams[0]!;
-    return { ...base, shelf: spaceId, projects, bug: result.labels.bug! };
+    return { ...base, acme: spaceId, projects, bug: result.labels.bug! };
   }
 
   it("keeps Linear's numbers, attaches sub-issues and logs one created row via import", async () => {
-    const { t, as, shelf, projects, bug, status, memberId } = await prepared();
+    const { t, as, acme, projects, bug, status, memberId } = await prepared();
     const done = Date.UTC(2026, 9, 1);
     const batch: IssueArg[] = [
       issue({
         externalId: "u28",
-        sourceKey: "SHELF-28",
-        spaceId: shelf,
+        sourceKey: "ACME-28",
+        spaceId: acme,
         statusId: status("Done"),
         projectId: projects["p-1"],
         labelIds: [bug, bug],
@@ -238,8 +238,8 @@ describe("imports.importLinearIssues", () => {
       }),
       issue({
         externalId: "u29",
-        sourceKey: "SHELF-29",
-        spaceId: shelf,
+        sourceKey: "ACME-29",
+        spaceId: acme,
         statusId: status("Todo"),
         parentExternalId: "u28",
         // A different project in Linear: a sub-issue always takes its parent's.
@@ -248,13 +248,13 @@ describe("imports.importLinearIssues", () => {
     ];
     const results = await as.mutation(api.imports.importLinearIssues, { issues: batch });
     expect(results).toEqual([
-      { externalId: "u28", key: "SHELF-28", outcome: "created" },
-      { externalId: "u29", key: "SHELF-29", outcome: "created" },
+      { externalId: "u28", key: "ACME-28", outcome: "created" },
+      { externalId: "u29", key: "ACME-29", outcome: "created" },
     ]);
 
-    const rows = await issues(t, shelf);
-    const parent = rows.find((row) => row.key === "SHELF-28")!;
-    const child = rows.find((row) => row.key === "SHELF-29")!;
+    const rows = await issues(t, acme);
+    const parent = rows.find((row) => row.key === "ACME-28")!;
+    const child = rows.find((row) => row.key === "ACME-29")!;
     expect(parent).toMatchObject({
       number: 28,
       projectId: projects["p-1"],
@@ -283,36 +283,36 @@ describe("imports.importLinearIssues", () => {
     });
 
     // The counter stays past the file's highest number (30), so new issues don't collide.
-    const created = await as.mutation(api.issues.create, { spaceId: shelf, title: "New" });
-    expect(created.key).toBe("SHELF-31");
+    const created = await as.mutation(api.issues.create, { spaceId: acme, title: "New" });
+    expect(created.key).toBe("ACME-31");
   });
 
   it("skips what's already imported, so a second run creates nothing", async () => {
-    const { t, as, shelf, status } = await prepared();
+    const { t, as, acme, status } = await prepared();
     const batch = [1, 2, 3].map((n) =>
       issue({
         externalId: `u${n}`,
-        sourceKey: `SHELF-${n}`,
-        spaceId: shelf,
+        sourceKey: `ACME-${n}`,
+        spaceId: acme,
         statusId: status("Backlog"),
       }),
     );
     await as.mutation(api.imports.importLinearIssues, { issues: batch });
     const again = await as.mutation(api.imports.importLinearIssues, { issues: batch });
     expect(again.map((row) => row.outcome)).toEqual(["skipped", "skipped", "skipped"]);
-    expect(again.map((row) => row.key)).toEqual(["SHELF-1", "SHELF-2", "SHELF-3"]);
-    expect(await issues(t, shelf)).toHaveLength(3);
+    expect(again.map((row) => row.key)).toEqual(["ACME-1", "ACME-2", "ACME-3"]);
+    expect(await issues(t, acme)).toHaveLength(3);
     const activity = await t.run((ctx) => ctx.db.query("activity").collect());
     expect(activity).toHaveLength(3);
   });
 
   it("carries on after an import that stopped halfway", async () => {
-    const { t, as, shelf, status } = await prepared();
+    const { t, as, acme, status } = await prepared();
     const all = [1, 2, 3, 4].map((n) =>
       issue({
         externalId: `u${n}`,
-        sourceKey: `SHELF-${n}`,
-        spaceId: shelf,
+        sourceKey: `ACME-${n}`,
+        spaceId: acme,
         statusId: status("Todo"),
         ...(n === 4 ? { parentExternalId: "u1" } : {}),
       }),
@@ -324,27 +324,27 @@ describe("imports.importLinearIssues", () => {
         issues: [all[2]!, { ...all[3]!, title: "   " }],
       }),
     ).rejects.toThrow(/title/);
-    expect(await issues(t, shelf)).toHaveLength(2);
+    expect(await issues(t, acme)).toHaveLength(2);
 
     const rerun = await as.mutation(api.imports.importLinearIssues, { issues: all });
     expect(rerun.map((row) => row.outcome)).toEqual(["skipped", "skipped", "created", "created"]);
-    const rows = await issues(t, shelf);
+    const rows = await issues(t, acme);
     expect(rows).toHaveLength(4);
-    expect(rows.find((row) => row.key === "SHELF-4")!.parentId).toBe(
-      rows.find((row) => row.key === "SHELF-1")!._id,
+    expect(rows.find((row) => row.key === "ACME-4")!.parentId).toBe(
+      rows.find((row) => row.key === "ACME-1")!._id,
     );
   });
 
   it("gives the next free number when the key is taken, and new numbers in a space with another key", async () => {
-    const { t, as, shelf, spaceId: pan, status } = await prepared();
-    // SHELF-5 already exists in Pantry (made by hand, not by the import).
+    const { t, as, acme, spaceId: pan, status } = await prepared();
+    // ACME-5 already exists in Pantry (made by hand, not by the import).
     await t.run(async (ctx) => {
-      const space = (await ctx.db.get("spaces", shelf))!;
+      const space = (await ctx.db.get("spaces", acme))!;
       await ctx.db.insert("issues", {
         workspaceId: space.workspaceId,
-        spaceId: shelf,
+        spaceId: acme,
         number: 5,
-        key: "SHELF-5",
+        key: "ACME-5",
         title: "Hand made",
         description: "",
         statusId: status("Todo"),
@@ -358,41 +358,41 @@ describe("imports.importLinearIssues", () => {
     });
     const results = await as.mutation(api.imports.importLinearIssues, {
       issues: [
-        issue({ externalId: "u5", sourceKey: "SHELF-5", spaceId: shelf, statusId: status("Todo") }),
+        issue({ externalId: "u5", sourceKey: "ACME-5", spaceId: acme, statusId: status("Todo") }),
         issue({ externalId: "h1", sourceKey: "HJ-1", spaceId: pan, statusId: status("Todo") }),
       ],
     });
     expect(results).toEqual([
-      { externalId: "u5", key: "SHELF-31", outcome: "created", renumbered: true },
+      { externalId: "u5", key: "ACME-31", outcome: "created", renumbered: true },
       { externalId: "h1", key: "PAN-1", outcome: "created" },
     ]);
   });
 
   it("brings a sub-issue in as top-level when its parent wasn't imported", async () => {
-    const { t, as, shelf, status } = await prepared();
+    const { t, as, acme, status } = await prepared();
     const [result] = await as.mutation(api.imports.importLinearIssues, {
       issues: [
         issue({
           externalId: "child",
-          sourceKey: "SHELF-2",
-          spaceId: shelf,
+          sourceKey: "ACME-2",
+          spaceId: acme,
           statusId: status("Todo"),
           parentExternalId: "archived-parent",
         }),
       ],
     });
     expect(result).toMatchObject({ outcome: "created", parentMissing: true });
-    const [row] = await issues(t, shelf);
+    const [row] = await issues(t, acme);
     expect(row!.parentId).toBeUndefined();
   });
 
   it("imports again an issue that was deleted after the import", async () => {
-    const { t, as, shelf, status } = await prepared();
+    const { t, as, acme, status } = await prepared();
     const batch = [
-      issue({ externalId: "u1", sourceKey: "SHELF-1", spaceId: shelf, statusId: status("Todo") }),
+      issue({ externalId: "u1", sourceKey: "ACME-1", spaceId: acme, statusId: status("Todo") }),
     ];
     const [first] = await as.mutation(api.imports.importLinearIssues, { issues: batch });
-    const row = (await issues(t, shelf))[0]!;
+    const row = (await issues(t, acme))[0]!;
     await as.mutation(api.issues.remove, { issueId: row._id });
     const [second] = await as.mutation(api.imports.importLinearIssues, { issues: batch });
     expect(second).toMatchObject({ outcome: "created", key: first!.key });
@@ -401,7 +401,7 @@ describe("imports.importLinearIssues", () => {
   });
 
   it("resolves members, labels, statuses and projects inside the caller's workspace only", async () => {
-    const { t, as, shelf, status } = await prepared();
+    const { t, as, acme, status } = await prepared();
     const other = await t.run(async (ctx) => {
       const workspaceId = await ctx.db.insert("workspaces", {
         name: "O",
@@ -432,8 +432,8 @@ describe("imports.importLinearIssues", () => {
     });
     const base = {
       externalId: "x",
-      sourceKey: "SHELF-1",
-      spaceId: shelf,
+      sourceKey: "ACME-1",
+      spaceId: acme,
       statusId: status("Todo"),
     };
     const attempts: [Partial<IssueFields>, RegExp][] = [
@@ -448,16 +448,16 @@ describe("imports.importLinearIssues", () => {
         as.mutation(api.imports.importLinearIssues, { issues: [issue({ ...base, ...patch })] }),
       ).rejects.toThrow(error);
     }
-    expect(await issues(t, shelf)).toHaveLength(0);
+    expect(await issues(t, acme)).toHaveLength(0);
   });
 
   it("refuses batches that are too big", async () => {
-    const { as, shelf, status } = await prepared();
+    const { as, acme, status } = await prepared();
     const batch = Array.from({ length: 101 }, (_, n) =>
       issue({
         externalId: `u${n}`,
-        sourceKey: `SHELF-${n + 1}`,
-        spaceId: shelf,
+        sourceKey: `ACME-${n + 1}`,
+        spaceId: acme,
         statusId: status("Todo"),
       }),
     );
@@ -493,7 +493,7 @@ describe("imports.linearContext", () => {
       issues: [
         issue({
           externalId: "u1",
-          sourceKey: "SHELF-1",
+          sourceKey: "ACME-1",
           spaceId: prepared.teams[0]!.spaceId,
           statusId,
         }),
@@ -501,19 +501,19 @@ describe("imports.linearContext", () => {
     });
 
     const context = await as.query(api.imports.linearContext, {
-      teams: ["Shelf", "Other team"],
+      teams: ["Acme", "Other team"],
       emails: ["KRIS@example.com", "nobody@example.com"],
       externalIds: ["u1", "u2"],
     });
     expect(context.teams).toEqual({
-      Shelf: { spaceId: prepared.teams[0]!.spaceId, key: "SHELF", name: "Shelf" },
+      Acme: { spaceId: prepared.teams[0]!.spaceId, key: "ACME", name: "Acme" },
       "Other team": null,
     });
     expect(context.people).toEqual({
       "kris@example.com": { memberId, displayName: "Kris" },
       "nobody@example.com": null,
     });
-    expect(context.imported).toEqual({ u1: "SHELF-1" });
+    expect(context.imported).toEqual({ u1: "ACME-1" });
   });
 });
 
