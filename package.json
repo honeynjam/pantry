@@ -1,6 +1,6 @@
 {
   "name": "pantry",
-  "version": "0.1.21",
+  "version": "0.1.30",
   "private": true,
   "license": "MIT",
   "packageManager": "pnpm@10.34.9",
