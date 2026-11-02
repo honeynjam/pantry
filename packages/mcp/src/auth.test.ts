@@ -12,6 +12,8 @@ const owner = (lastUsedAt: number | null) => ({
   userId: "user1",
   displayName: "Kris",
   lastUsedAt,
+  expiresAt: null as number | null,
+  resource: null as string | null,
 });
 
 function backendWith(verify: unknown, touch: () => unknown = () => true) {
@@ -55,7 +57,14 @@ describe("createVerifyToken", () => {
       token: "pan_live",
       clientId: "token1",
       scopes: [],
-      extra: { ...owner(0), lastUsedAt: undefined, appUrl: "https://pantry.example.com" },
+      extra: {
+        tokenId: "token1",
+        memberId: "member1",
+        workspaceId: "ws1",
+        userId: "user1",
+        displayName: "Kris",
+        appUrl: "https://pantry.example.com",
+      },
     });
   });
 
@@ -78,5 +87,37 @@ describe("createVerifyToken", () => {
       throw new Error("offline");
     });
     expect(await verifier(backend)(req, "pan_live")).toMatchObject({ token: "pan_live" });
+  });
+
+  describe("OAuth access tokens", () => {
+    const oauth = (expiresAt: number, resource: string) => ({
+      ...owner(NOW),
+      expiresAt,
+      resource,
+    });
+
+    it("work until they expire, with expiresAt in seconds for withMcpAuth", async () => {
+      const { backend } = backendWith(oauth(NOW + MINUTE, "https://pantry.example.com/api/mcp"));
+      const info = await verifier(backend)(req, "pan_oauth");
+      expect(info?.expiresAt).toBe(Math.floor((NOW + MINUTE) / 1000));
+      expect(info?.extra).toMatchObject({ memberId: "member1" });
+
+      const expired = backendWith(oauth(NOW, "https://pantry.example.com/api/mcp"));
+      expect(await verifier(expired.backend)(req, "pan_oauth")).toBeUndefined();
+    });
+
+    it("only work for this server's /api/mcp (RFC 8707 audience)", async () => {
+      const ok = backendWith(oauth(NOW + MINUTE, "HTTPS://Pantry.example.com/api/mcp/"));
+      expect(await verifier(ok.backend)(req, "pan_oauth")).toBeDefined();
+      const other = backendWith(oauth(NOW + MINUTE, "https://other.example.com/api/mcp"));
+      expect(await verifier(other.backend)(req, "pan_oauth")).toBeUndefined();
+    });
+
+    it("personal API tokens have neither and never expire", async () => {
+      const { backend } = backendWith(owner(NOW));
+      const info = await verifier(backend)(req, "pan_live");
+      expect(info).toBeDefined();
+      expect(info?.expiresAt).toBeUndefined();
+    });
   });
 });
