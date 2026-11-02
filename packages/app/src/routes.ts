@@ -7,6 +7,7 @@ export const SETTINGS_SECTIONS = [
   "spaces",
   "labels",
   "statuses",
+  "import-export",
   "tokens",
 ] as const;
 export type SettingsSection = (typeof SETTINGS_SECTIONS)[number];

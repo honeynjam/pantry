@@ -26,7 +26,7 @@ import { priority } from "./schema";
  */
 
 const MAX_LOOKUPS = 2_000;
-const MAX_EMAILS = 200;
+const MAX_EMAILS = 1_000;
 
 /**
  * What the review needs from the workspace: the space each team went to last time (if any), the

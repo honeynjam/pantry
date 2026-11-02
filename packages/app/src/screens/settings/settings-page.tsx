@@ -3,6 +3,7 @@
 import { cn } from "@pantry/ui/lib/utils";
 import { motion, spring, useMotionTransition } from "@pantry/ui/lib/motion";
 import {
+  ArrowDownUpIcon,
   CircleDashedIcon,
   FolderIcon,
   KeyRoundIcon,
@@ -18,6 +19,7 @@ import { AppShell, type WorkspaceData } from "../../shell/app-shell";
 import { NotMemberScreen } from "../not-member";
 import { modeOf, vocabulary } from "../../lib/vocabulary";
 import { GeneralSettings } from "./general";
+import { ImportExportSettings } from "./import-export";
 import { LabelsSettings } from "./labels";
 import { MembersSettings } from "./members";
 import { SpacesSettings } from "./spaces";
@@ -70,6 +72,13 @@ const SECTIONS: SectionDef[] = [
     render: (data) => <StatusesSettings data={data} />,
   },
   {
+    id: "import-export",
+    label: "Import and Export",
+    icon: ArrowDownUpIcon,
+    group: "Workspace",
+    render: (data) => <ImportExportSettings data={data} />,
+  },
+  {
     id: "tokens",
     label: "API tokens",
     icon: KeyRoundIcon,
@@ -80,7 +89,10 @@ const SECTIONS: SectionDef[] = [
 
 const GROUPS = ["Workspace", "Account"] as const;
 
-/** Workspace settings (members and invites, spaces, labels, statuses) and my API tokens (spec §4, §6). */
+/**
+ * Workspace settings (members and invites, spaces, labels, statuses, import and export) and my API
+ * tokens (spec §4, §6).
+ */
 export function SettingsPage({ section }: { section: string }) {
   const current = SECTIONS.find((item) => item.id === section);
   return (

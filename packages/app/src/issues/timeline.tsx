@@ -41,6 +41,19 @@ export function ViaMcp() {
   );
 }
 
+/** Rows an import wrote (Settings → Import and Export), so they don't read as typed in by hand. */
+export function ViaImport() {
+  return (
+    <Badge
+      variant="outline"
+      className="text-2xs h-4 px-1.5"
+      title="Brought in by an import, run by this person"
+    >
+      via import
+    </Badge>
+  );
+}
+
 const Value = ({ children }: { children: ReactNode }) => (
   <span className="text-foreground font-medium">{children}</span>
 );
@@ -51,7 +64,14 @@ const names = (list: string | undefined) => (list ? list.split(", ").filter(Bool
 export function describeActivity(row: Activity): ReactNode {
   switch (row.type) {
     case "created":
-      return "created the issue";
+      // An imported issue's `created` row names where it came from ("Linear").
+      return row.via === "import" ? (
+        <>
+          imported the issue from <Value>{row.from ?? "another tracker"}</Value>
+        </>
+      ) : (
+        "created the issue"
+      );
     case "status_changed":
       return (
         <>
@@ -208,6 +228,7 @@ function ActivityItem({ row, lookups }: { row: Activity; lookups: Lookups }) {
         {describeActivity(row)}
       </span>
       {row.via === "mcp" && <ViaMcp />}
+      {row.via === "import" && <ViaImport />}
       <span aria-hidden>·</span>
       <time
         dateTime={new Date(row._creationTime).toISOString()}

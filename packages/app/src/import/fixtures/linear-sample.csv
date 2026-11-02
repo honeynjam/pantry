@@ -1,0 +1,14 @@
+"ID","Team","Title","Description","Status","Estimate","Priority","Project ID","Project","Creator","Assignee","Labels","Cycle Number","Cycle Name","Cycle Start","Cycle End","Created","Updated","Started","Triaged","Completed","Canceled","Archived","Due Date","Parent issue","Initiatives","Project Milestone ID","Project Milestone","SLA Status","UUID","Time in status (minutes)","Related to","Blocked by","Duplicate of"
+"ACME-3","Acme Web","Write the copy","Short.","Todo","","Medium","11111111-1111-4111-8111-111111111111","Launch","ana@example.com","kris@example.com","web","","","","","2026-09-02T10:00:00.000Z","2026-09-02T10:00:00.000Z","","","","","","","ACME-2","","","","","aaaaaaaa-0000-4000-8000-000000000003","120","","",""
+"ACME-2","Acme Web","Launch page","## Plan
+
+Ship the page, then ""announce"" it.
+
+- one, two
+- three","In Progress","","High","11111111-1111-4111-8111-111111111111","Launch","kris@example.com","ana@example.com","web, Feature","","","","","2026-09-01T09:00:00.000Z","2026-09-03T09:00:00.000Z","2026-09-03T09:00:00.000Z","","","","","2026-10-18T23:00:00.000Z","","Grow","m1","Beta","","aaaaaaaa-0000-4000-8000-000000000002","120","ACME-1, OPS-1","ACME-1",""
+"ACME-1","Acme Web","Fix login bug","Steps:
+1. Sign in
+2. See ""error, again""","Done","","Urgent","22222222-2222-4222-8222-222222222222","Extension","kris@example.com","","Bug, backend","","","","","2026-08-01T09:00:00.000Z","","","","2026-08-05T12:00:00.000Z","","","","","","","","","aaaaaaaa-0000-4000-8000-000000000001","120","","",""
+"ACME-4","Acme Web","Duplicate of login bug","","Duplicate","","No priority","","","ana@example.com","","bug","","","","","2026-08-02T09:00:00.000Z","","","","","2026-08-03T09:00:00.000Z","","","","","","","","aaaaaaaa-0000-4000-8000-000000000004","120","","","ACME-1"
+"ACME-5","Acme Web","Old idea","","Backlog","","Low","","","kris@example.com","","","","","","","2025-01-01T09:00:00.000Z","","","","","","2026-09-29T13:46:56.269Z","","","","","","","aaaaaaaa-0000-4000-8000-000000000005","120","","",""
+"OPS-1","Ops & Support","Rotate keys","","Backlog","3","No priority","","","bo@example.com","","Security","4","Autumn","","","2026-07-01T09:00:00.000Z","","","","","","","","","","","","","bbbbbbbb-0000-4000-8000-000000000001","120","","",""
