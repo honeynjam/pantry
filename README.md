@@ -49,6 +49,10 @@ never touch your Convex data. Every push to your repo's production branch redepl
 2. Paste the snippet the screen shows. Claude Code:
    `claude mcp add --transport http pantry https://<your-app>/api/mcp --header "Authorization: Bearer <token>"`.
    Cursor: the `mcp.json` snippet, which reads the token from `PANTRY_TOKEN`.
+   **Claude (claude.ai, Desktop, mobile) and ChatGPT** need no token: add a custom connector with just
+   `https://<your-app>/api/mcp`, then sign in to Pantry in the browser window it opens and press **Allow**. Claude:
+   Customize → Connectors → Add custom connector. ChatGPT: Settings → Apps → Advanced settings → Developer mode, then
+   Create app with OAuth. They show under **Connected apps** on the same screen, where you can disconnect them.
 3. Tell the agent "work on PAN-12". It reads the issue and the space's context doc, moves the issue itself, comments
    and adds sub-issues. Everything shows under your name, tagged "via MCP".
 
@@ -58,7 +62,7 @@ never touch your Convex data. Every push to your repo's production branch redepl
 The agent acts as you, inside your workspace only, and can do what a member can in the app, except deleting
 spaces, comments or labels, archiving spaces, adding or removing statuses, and invites, members or tokens. It can
 delete an issue only by repeating its key (`delete_issue { key, confirm }`), and is told to ask you first.
-Revoking a token on the same screen stops it at once (the next call gets a 401). Tools (spec §10b):
+Revoking a token or disconnecting an app on the same screen stops it at once (the next call gets a 401). Tools (spec §10b):
 
 - Issues: `get_issue`, `list_issues`, `search_issues`, `create_issue`, `create_sub_issue`, `add_comment`,
   `update_issue`, `delete_issue`

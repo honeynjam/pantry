@@ -70,8 +70,10 @@ const MAX_COMMENTS = 50;
 // ---------------------------------------------------------------------------------------------
 
 /**
- * Who a token acts as, or null when it's unknown or revoked (the route answers 401). Returns
- * `lastUsedAt` so the route can call `touchToken` only when it's stale.
+ * Who a token acts as, or null when it's unknown, revoked or expired (the route answers 401). The
+ * same for a personal API token and an OAuth access token (convex/oauth.ts). Returns `lastUsedAt`
+ * so the route can call `touchToken` only when it's stale, and an OAuth token's `expiresAt` and
+ * `resource` so the route can check them itself.
  */
 export const verifyToken = query({
   args: { token: v.string() },
@@ -79,6 +81,10 @@ export const verifyToken = query({
     const owner = await findToken(ctx, token);
     if (!owner) return null;
     const { apiToken, member } = owner;
+    // An OAuth access token is bound to one resource (RFC 8707): this instance's /api/mcp. The
+    // route compares it with its own URL; personal API tokens have none.
+    const grant = apiToken.grantId ? await ctx.db.get("oauthGrants", apiToken.grantId) : null;
+    if (apiToken.grantId && (!grant || grant.revokedAt !== undefined)) return null;
     return {
       tokenId: apiToken._id,
       memberId: member._id,
@@ -86,6 +92,8 @@ export const verifyToken = query({
       userId: member.userId,
       displayName: member.displayName,
       lastUsedAt: apiToken.lastUsedAt ?? null,
+      expiresAt: apiToken.expiresAt ?? null,
+      resource: grant?.resource ?? null,
     };
   },
 });

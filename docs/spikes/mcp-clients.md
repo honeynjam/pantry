@@ -131,13 +131,58 @@ Website and Launch, write its context doc, file three issues across them with la
 Launch." Afterwards ACME's settings show the projects and doc, and each issue's activity says "via MCP". Archive
 or rename the space in the app afterwards if you don't want to keep it.
 
+## 5. Claude app and ChatGPT: URL-only, sign in over OAuth (0.1.30)
+
+Claude (claude.ai, Desktop, mobile) and ChatGPT can't send an `Authorization` header, so Pantry is its own OAuth
+server for `/api/mcp` (MCP authorization spec 2026-07-28; design notes at the top of
+`packages/backend/convex/lib/oauth.ts`). Real Claude and ChatGPT connect from their servers, so this needs the
+deployed instance; localhost was covered by an end-to-end run with the MCP client SDK (branch `feat/mcp-oauth`).
+
+**What they use.** Both identify themselves with a Client ID Metadata Document when the server advertises
+`client_id_metadata_document_supported` and `none` in `token_endpoint_auth_methods_supported` (Pantry does), and
+fall back to dynamic registration otherwise. Redirects: Claude `https://claude.ai/api/mcp/auth_callback`; ChatGPT
+`https://chatgpt.com/connector_platform_oauth_redirect` (it uses this stable one only when the server returns `iss`
+in the authorization response, which Pantry does). ChatGPT developer mode no longer needs `search`/`fetch` tools.
+
+0. After deploying, check discovery (all three should be JSON; the 401 should name the second URL):
+
+   ```bash
+   curl -s https://<instance>/.well-known/oauth-authorization-server
+   curl -s https://<instance>/.well-known/oauth-protected-resource/api/mcp
+   curl -s -i -X POST https://<instance>/api/mcp -H 'content-type: application/json' \
+     -H 'accept: application/json, text/event-stream' -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' \
+     | grep -i www-authenticate
+   ```
+
+1. **Claude.** claude.ai → **Customize → Connectors** → **+** → **Add custom connector**. Name "Pantry", URL
+   `https://<instance>/api/mcp`, leave the advanced OAuth fields empty → **Add**. Click **Connect** on it. A Pantry
+   window opens: sign in if asked. The consent screen should say **Connect Claude?** with a verified host (a badge
+   and `claude.ai`) and "Sends you to `claude.ai`". Press **Allow**; the window closes and the connector shows as
+   connected. In a new chat: "Use Pantry: what's in my workspace?" (`get_workspace`), then "Create an issue in PAN
+   called 'Hello from Claude'". Check the app: the issue's activity says "via MCP" under your name.
+2. **Claude Desktop.** Nothing to add: connectors sync from claude.ai. Open Desktop, check Pantry is listed under
+   the connectors in a chat's tools menu, and ask it to list your issues.
+3. **ChatGPT.** Settings → **Apps** → **Advanced settings** → turn on **Developer mode**. Then **Create app**: name
+   "Pantry", MCP server URL `https://<instance>/api/mcp`, Authentication **OAuth** → **Create**. Sign in and
+   **Allow** (consent should say "Sends you to `chatgpt.com`"). In a chat, **+** → Pantry, then ask "What's in my
+   Pantry workspace?" and "Create an issue in PAN called 'Hello from ChatGPT'" (it asks you to confirm the write).
+4. In Pantry, **Settings → API tokens → Connected apps** lists Claude and ChatGPT with "Used just now".
+5. **Disconnect** Claude there, then ask Claude to list issues again: it should fail or ask you to reconnect.
+   Reconnect from Customize → Connectors to confirm that works too.
+6. Optional: leave a connector unused for over an hour, then use it. It should still work (the refresh token is
+   used in the background; "Used …" updates).
+
+If Claude shows the connector's sign-in but the Pantry window says "Can't connect this app", the message names the
+problem (an unregistered redirect, or the metadata document couldn't be fetched). Send it over with the time.
+
 ## Troubleshooting
 
 | Symptom | Likely cause |
 |---|---|
 | `claude mcp list` shows ✗ / "Failed to connect" | Wrong URL (it must end in `/api/mcp`) or the deploy doesn't include M4. Try the curl in step 0. |
 | 401 with a fresh token | The header lost its `Bearer ` prefix, or the token was copied cut short (it's `pan_` plus 43 characters). |
-| Claude Code says the server needs authentication | It probably got a 401; the 401 response points at OAuth metadata, which Pantry doesn't serve (no MCP OAuth in v0.1). Fix the token instead. (Not observed locally; listed in case.) |
+| Claude Code says the server needs authentication | It got a 401 and is offering to sign in over OAuth (supported since 0.1.30). Either fix the token in the header, or remove the header and let it sign in (`/mcp` → Authenticate). |
+| Claude or ChatGPT: "Couldn't reach the MCP server" / "Authorization failed" | Open `https://<instance>/.well-known/oauth-authorization-server` in a browser: it must be JSON with `"issuer": "https://<instance>"`. The URL in the connector must end in `/api/mcp`. Section 5 has the full click-path. |
 | A tool answers with an error listing names | Expected: an unknown status, project, label or person. The message lists the valid values and the agent retries. |
 | "This workspace is finishing an upgrade" | `migrations:run` hasn't finished after a deploy; wait a minute. |
 
@@ -154,5 +199,14 @@ or rename the space in the app afterwards if you don't want to keep it.
 | Moves it to In Review, shown "via MCP" | | |
 | Token shows "Used …" | | |
 | Revoked token → 401 on the next call | | |
+
+| OAuth check (section 5) | Claude (claude.ai) | Claude Desktop | ChatGPT |
+|---|---|---|---|
+| Connects with only the URL; consent shows the verified host | | | |
+| `get_workspace` works | | | |
+| Issue created, shown "via MCP" under your name | | | |
+| Listed under Connected apps, "Used …" | | | |
+| Still works after an hour (refresh) | | | |
+| Disconnect → stops working; reconnect works | | | |
 
 Notes (client versions, anything odd):

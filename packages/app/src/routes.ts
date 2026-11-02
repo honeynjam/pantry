@@ -25,4 +25,6 @@ export const routes = {
   spaceSettings: (key: string) => `/spaces/${encodeURIComponent(key)}/settings`,
   issue: (key: string) => `/issues/${encodeURIComponent(key)}`,
   settings: (section: SettingsSection = "members") => `/settings/${section}`,
+  /** The MCP OAuth consent screen; /api/oauth/authorize sends people here. */
+  oauthConsent: "/oauth/consent",
 } as const;

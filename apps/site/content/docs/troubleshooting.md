@@ -10,6 +10,8 @@ serverVersion, minAppVersion, needsSecret }`.
 | Setup screen: "One more step" | Set `BETTER_AUTH_SECRET` once (the screen shows the command). `/api/instance` shows `"needsSecret": false` when it's fixed. |
 | Vercel can't connect the repo | Hobby can't use repos owned by a GitHub organisation. Clone into a personal account. |
 | An MCP client says 401 or unauthorized | The token was revoked or mistyped. Create a new one in Settings → API tokens and update the client's header. |
+| Claude or ChatGPT says it couldn't connect or authorize | Check that `https://<your-app>/.well-known/oauth-authorization-server` opens in a browser, and that the URL you pasted ends in `/api/mcp`. Claude and ChatGPT connect from their own servers, so the instance must be on public HTTPS. A connector that worked before and stopped: it was disconnected in Settings → API tokens, or unused for 30 days; connect it again. |
+| The Pantry window says "This request expired" | You took over 10 minutes. Start connecting again from Claude or ChatGPT. |
 | You hit a Convex free-plan limit | Convex dashboard → Usage. A runaway agent loop is the usual cause: revoke its token. |
 
 Still stuck? [Open an issue](https://github.com/honeynjam/pantry/issues) with what you see in the build log or on

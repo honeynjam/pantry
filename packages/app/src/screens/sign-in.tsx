@@ -31,7 +31,21 @@ export function SignInPage({ inviteToken }: { inviteToken?: string }) {
   );
 }
 
-function SignInForm({ inviteToken }: { inviteToken?: string }) {
+/**
+ * The sign-in card. The OAuth consent screen reuses it (with its own title and no invite footer):
+ * after signing in, the page it's on moves on by itself.
+ */
+export function SignInForm({
+  inviteToken,
+  title = "Sign in",
+  description,
+  showFooter = true,
+}: {
+  inviteToken?: string;
+  title?: string;
+  description?: string;
+  showFooter?: boolean;
+}) {
   const authClient = useAuthClient();
   const { Link } = useNavigation();
   const [error, setError] = useState<string | null>(null);
@@ -54,18 +68,22 @@ function SignInForm({ inviteToken }: { inviteToken?: string }) {
 
   return (
     <AuthLayout
-      title="Sign in"
-      description={inviteToken ? "Sign in to accept your invite." : "Welcome back."}
+      title={title}
+      description={
+        description ?? (inviteToken ? "Sign in to accept your invite." : "Welcome back.")
+      }
       footer={
-        <>
-          Have an invite?{" "}
-          <Link
-            href={withInvite(routes.signUp, inviteToken)}
-            className="text-foreground decoration-gray-8 underline underline-offset-4 hover:decoration-current"
-          >
-            Create your account
-          </Link>
-        </>
+        showFooter && (
+          <>
+            Have an invite?{" "}
+            <Link
+              href={withInvite(routes.signUp, inviteToken)}
+              className="text-foreground decoration-gray-8 underline underline-offset-4 hover:decoration-current"
+            >
+              Create your account
+            </Link>
+          </>
+        )
       }
     >
       <form onSubmit={onSubmit} noValidate={false}>

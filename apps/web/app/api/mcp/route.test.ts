@@ -74,6 +74,10 @@ describe("POST /api/mcp", () => {
     const res = await POST(rpc(getIssue));
     expect(res.status).toBe(401);
     expect(res.headers.get("www-authenticate")).toMatch(/^Bearer /);
+    // OAuth clients (Claude, ChatGPT) find the authorization server from here.
+    expect(res.headers.get("www-authenticate")).toContain(
+      'resource_metadata="https://pantry.example.com/.well-known/oauth-protected-resource/api/mcp"',
+    );
     expect(calls).toEqual([]);
   });
 

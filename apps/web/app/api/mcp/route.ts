@@ -1,6 +1,12 @@
 import { brand } from "@pantry/backend/brand";
 import { SERVER_VERSION } from "@pantry/backend/version";
-import { convexBackend, createVerifyToken, registerTools, SERVER_INSTRUCTIONS } from "@pantry/mcp";
+import {
+  convexBackend,
+  createVerifyToken,
+  OAUTH_PATHS,
+  registerTools,
+  SERVER_INSTRUCTIONS,
+} from "@pantry/mcp";
 import { createMcpHandler, getPublicOrigin, withMcpAuth } from "mcp-handler";
 import { getConvexUrl } from "@/lib/convex-env";
 
@@ -11,8 +17,10 @@ let cached: { convexUrl: string; handler: Handler } | undefined;
 
 /**
  * The MCP server (spec §6, §10b): `withMcpAuth(createMcpHandler(registerTools), verifyToken,
- * { required: true })`. A request without a live API token gets a 401 before any tool runs; each
- * tool passes the token on to Convex, which checks it again. Stateless, so GET answers 405.
+ * { required: true })`. A request without a live token (a personal API token or an OAuth access
+ * token) gets a 401 before any tool runs, with `WWW-Authenticate: Bearer resource_metadata=…` so
+ * OAuth clients can find /api/oauth/*; each tool passes the token on to Convex, which checks it
+ * again. Stateless, so GET answers 405.
  */
 function handlerFor(convexUrl: string): Handler {
   if (cached?.convexUrl !== convexUrl) {
@@ -22,7 +30,14 @@ function handlerFor(convexUrl: string): Handler {
       instructions: SERVER_INSTRUCTIONS,
     });
     const verifyToken = createVerifyToken(backend, { appUrl: getPublicOrigin });
-    cached = { convexUrl, handler: withMcpAuth(mcp, verifyToken, { required: true }) };
+    cached = {
+      convexUrl,
+      handler: withMcpAuth(mcp, verifyToken, {
+        required: true,
+        // The 401 points OAuth clients (Claude, ChatGPT) at the metadata for this endpoint.
+        resourceMetadataPath: OAUTH_PATHS.protectedResourceForMcp,
+      }),
+    };
   }
   return cached.handler;
 }

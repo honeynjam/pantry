@@ -32,6 +32,19 @@ const nextConfig: NextConfig = {
   // Lets a second dev server run from the same folder (Next allows one per build dir), e.g. for tests.
   distDir: process.env.NEXT_DIST_DIR ?? ".next",
   transpilePackages: ["@pantry/ui", "@pantry/app", "@pantry/backend", "@pantry/mcp"],
+  // The MCP OAuth consent screen can't be framed (clickjacking an "Allow" press).
+  async headers() {
+    return [
+      {
+        source: "/oauth/:path*",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+          { key: "Referrer-Policy", value: "no-referrer" },
+        ],
+      },
+    ];
+  },
   env: Object.fromEntries(
     Object.entries({
       NEXT_PUBLIC_CONVEX_URL: convexUrl,

@@ -179,6 +179,9 @@ describe("lastUsedAt", () => {
       userId: owner.subject,
       displayName: "Kris",
       lastUsedAt: null,
+      // Personal API tokens never expire and aren't bound to a resource (OAuth tokens are).
+      expiresAt: null,
+      resource: null,
     });
     await t.withIdentity(owner).mutation(api.tokens.revoke, { tokenId });
     expect(await t.query(api.mcp.verifyToken, { token })).toBeNull();
