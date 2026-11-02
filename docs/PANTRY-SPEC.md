@@ -65,7 +65,8 @@ A fast, keyboard-first, open-source issue tracker (MIT, non-commercial) for 1–
 - Multiple workspaces per user UI.
 - Mobile apps, offline mode.
 - Notifications of any kind: no in-app inbox, email or push in v0.1 (macOS notifications arrive with the Mac app in v0.2).
-- MCP OAuth (personal tokens only in v0.1).
+- MCP OAuth (personal tokens only in v0.1). _Update: added in 0.1.30 at Kris's request, so Claude and ChatGPT
+  connectors work; see convex/lib/oauth.ts._
 - Billing or anything commercial.
 
 ### Removed by Kris (not planned; don't build)

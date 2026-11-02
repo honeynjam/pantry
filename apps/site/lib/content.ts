@@ -92,7 +92,7 @@ export const mcp = {
     },
     {
       title: "Shows as you, tagged “via MCP”",
-      body: "Agents act with your personal token, so every change lands in the activity log under your name.",
+      body: "Agents act as you, with your token or after you sign in, so every change lands in the activity log under your name.",
     },
     {
       title: "Nothing moves by itself",
@@ -110,6 +110,11 @@ export const mcp = {
       id: "claude",
       label: "Claude Code",
       code: `claude mcp add --transport http pantry \\\n  https://pantry.yourname.dev/api/mcp \\\n  --header "Authorization: Bearer ${brand.tokenPrefix}••••••••"`,
+    },
+    {
+      id: "connector",
+      label: "Claude · ChatGPT",
+      code: `# Add a custom connector with this URL,\n# then sign in and press Allow. No token.\nhttps://pantry.yourname.dev/api/mcp`,
     },
     {
       id: "cursor",

@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **Connect Claude and ChatGPT with just the URL.** Claude (claude.ai, Desktop, mobile) and ChatGPT can't send an
+  API token, so they couldn't connect before. Now you add a custom connector with `https://<your-app>/api/mcp`, sign
+  in to Pantry in the window that opens and press Allow. The app acts as you, exactly like an API token. Settings →
+  API tokens has the steps for each, and lists your **Connected apps** with a Disconnect button. Claude Code and
+  Cursor keep working with API tokens as before.
+
 ## [0.1.21] - 2026-10-30
 
 ### Fixed
