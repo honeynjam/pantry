@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **Import from Linear, and export.** Settings → Import and Export takes Linear's CSV export: each team becomes a
+  space (keeping its issue numbers when the key matches), with its projects, labels, statuses, sub-issues, due
+  dates and assignees matched by email. You review everything before it's written, and importing the same file
+  again skips what's already there. Linear fields Pantry doesn't have (milestones, initiatives, relations…) go into
+  a note at the end of each description. Any member can download the workspace as JSON (everything) or the issues
+  as CSV.
+
 ## [0.1.30] - 2026-11-02
 
 ### Added

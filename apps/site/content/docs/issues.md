@@ -1,5 +1,6 @@
 An issue has a title, a Markdown description, a status, a priority, an assignee, labels, a due date and comments.
-Each one keeps a timeline of every change, and changes made by agents are tagged "via MCP".
+Each one keeps a timeline of every change, and changes made by agents are tagged "via MCP". Issues brought in
+by an [import](/docs/import-export) start with one entry tagged "via import".
 
 ## Statuses
 

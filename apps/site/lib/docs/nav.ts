@@ -58,6 +58,11 @@ export const DOCS_NAV: DocSection[] = [
         description: "Statuses, priorities, labels, sub-issues, views and filters.",
       },
       {
+        slug: "import-export",
+        title: "Import and export",
+        description: "Move your issues over from Linear, or download your workspace.",
+      },
+      {
         slug: "keyboard-shortcuts",
         title: "Keyboard shortcuts",
         description: "Every shortcut in the app, straight from its shortcut registry.",
