@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@pantry/ui/components/
 import { Tooltip, TooltipContent, TooltipTrigger } from "@pantry/ui/components/tooltip";
 import { useAction, useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
-import { KeyRoundIcon, PlusIcon } from "lucide-react";
+import { BadgeCheckIcon, KeyRoundIcon, PlugIcon, PlusIcon } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "../../components/confirm-dialog";
@@ -18,6 +18,7 @@ import { fullDate, timeAgo } from "../../lib/format";
 import { describeError, FormError } from "../form-error";
 import {
   claudeCodeSnippet,
+  CONNECTOR_STEPS,
   cursorEnvSnippet,
   cursorSnippet,
   mcpUrl,
@@ -27,6 +28,7 @@ import { SettingsEmpty, SettingsGroup, SettingsList, SettingsPanel, SettingsRow 
 
 export type CreatedToken = { name: string; token: string };
 type TokenRow = FunctionReturnType<typeof api.tokens.list>[number];
+type ConnectionRow = FunctionReturnType<typeof api.oauth.connections>[number];
 
 /** User settings → API tokens (spec §6): personal tokens for MCP clients, plus the client snippets. */
 export function TokensSettings() {
@@ -37,14 +39,15 @@ export function TokensSettings() {
       title="API tokens"
       description={
         <>
-          Personal tokens for AI agents working over MCP. An agent with your token acts as you: its
-          comments and changes show under your name, tagged “via MCP”.
+          Personal tokens for AI agents working over MCP, and the apps you connected by signing in.
+          Either acts as you: its comments and changes show under your name, tagged “via MCP”.
         </>
       }
     >
       <CreateToken created={created} onCreated={setCreated} />
       <ClientSnippets url={url} token={created?.token} />
       <TokenList />
+      <ConnectedApps />
     </SettingsPanel>
   );
 }
@@ -155,8 +158,16 @@ export function ClientSnippets({ url, token }: { url: string; token: string | un
       <Tabs defaultValue="claude-code" className="border-border rounded-lg border p-3">
         <TabsList>
           <TabsTrigger value="claude-code">Claude Code</TabsTrigger>
+          <TabsTrigger value="claude">Claude app</TabsTrigger>
+          <TabsTrigger value="chatgpt">ChatGPT</TabsTrigger>
           <TabsTrigger value="cursor">Cursor</TabsTrigger>
         </TabsList>
+        <TabsContent value="claude" className="flex flex-col gap-2">
+          <ConnectorSteps url={url} steps={CONNECTOR_STEPS.claude} />
+        </TabsContent>
+        <TabsContent value="chatgpt" className="flex flex-col gap-2">
+          <ConnectorSteps url={url} steps={CONNECTOR_STEPS.chatgpt} />
+        </TabsContent>
         <TabsContent value="claude-code" className="flex flex-col gap-2">
           <p className="text-muted-foreground text-xs">
             Run this in a terminal{token ? "" : ", with your token in place of the placeholder"}:
@@ -182,6 +193,24 @@ export function ClientSnippets({ url, token }: { url: string; token: string | un
         </TabsContent>
       </Tabs>
     </SettingsGroup>
+  );
+}
+
+/** Claude and ChatGPT connect with the URL alone and sign in (OAuth): no token to copy. */
+function ConnectorSteps({ url, steps }: { url: string; steps: readonly string[] }) {
+  return (
+    <>
+      <p className="text-muted-foreground text-xs">
+        No token needed: it signs in to {brand.name} in your browser and shows up under Connected
+        apps below.
+      </p>
+      <ol className="text-muted-foreground flex list-decimal flex-col gap-1 pl-5 text-xs leading-5">
+        {steps.map((step) => (
+          <li key={step}>{step}</li>
+        ))}
+      </ol>
+      <Snippet text={url} label="Copy server URL" />
+    </>
   );
 }
 
@@ -277,6 +306,94 @@ function TokenList() {
         destructive
         onConfirm={async () => {
           if (target) await onRevoke(target._id, target.name);
+        }}
+      />
+    </>
+  );
+}
+
+/** Apps connected by signing in (Claude, ChatGPT…): one row each, with Disconnect. */
+function ConnectedApps() {
+  const connections = useQuery(api.oauth.connections);
+  const disconnect = useMutation(api.oauth.disconnect);
+  const [target, setTarget] = useState<ConnectionRow | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  if (connections === undefined) return null;
+
+  return (
+    <>
+      <SettingsGroup
+        title="Connected apps"
+        hint={<span className="tabular font-mono">{connections.length}</span>}
+      >
+        {connections.length === 0 ? (
+          <SettingsEmpty>
+            No apps yet. Claude and ChatGPT appear here after you connect them with the URL above.
+          </SettingsEmpty>
+        ) : (
+          <SettingsList>
+            {connections.map((app) => (
+              <SettingsRow key={app._id}>
+                <PlugIcon className="text-muted-foreground size-3.5 shrink-0" aria-hidden />
+                <span className="text-foreground min-w-0 flex-1 truncate">{app.name}</span>
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <span className="text-muted-foreground flex items-center gap-1 font-mono text-xs" />
+                    }
+                  >
+                    {app.verified && <BadgeCheckIcon className="size-3" aria-hidden />}
+                    {app.host}
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {app.verified
+                      ? `Identified by ${app.host}.`
+                      : `Sends sign-ins back to ${app.host}. Its name is what the app said about itself.`}
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger
+                    render={<span className="text-muted-foreground w-28 text-right text-xs" />}
+                  >
+                    {app.lastUsedAt ? `Used ${timeAgo(app.lastUsedAt)}` : "Never used"}
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Connected {fullDate(app._creationTime)}.
+                    {app.lastUsedAt
+                      ? ` Last used ${fullDate(app.lastUsedAt)} (updated every 10 minutes at most).`
+                      : ""}
+                  </TooltipContent>
+                </Tooltip>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setTarget(app);
+                    setConfirmOpen(true);
+                  }}
+                >
+                  Disconnect
+                </Button>
+              </SettingsRow>
+            ))}
+          </SettingsList>
+        )}
+      </SettingsGroup>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={`Disconnect “${target?.name ?? ""}”?`}
+        description="It loses access at once. To use it again, connect it again from the app."
+        confirmLabel="Disconnect"
+        destructive
+        onConfirm={async () => {
+          if (!target) return;
+          try {
+            await disconnect({ grantId: target._id });
+            toast(`${target.name} disconnected`);
+          } catch (err) {
+            toast.error(describeError(err, "Couldn't disconnect the app."));
+          }
         }}
       />
     </>
