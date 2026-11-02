@@ -11,7 +11,9 @@
 import type * as auth from "../auth.js";
 import type * as comments from "../comments.js";
 import type * as docs from "../docs.js";
+import type * as exports from "../exports.js";
 import type * as http from "../http.js";
+import type * as imports from "../imports.js";
 import type * as invites from "../invites.js";
 import type * as issues from "../issues.js";
 import type * as labels from "../labels.js";
@@ -22,6 +24,7 @@ import type * as lib_brand from "../lib/brand.js";
 import type * as lib_comments from "../lib/comments.js";
 import type * as lib_defaults from "../lib/defaults.js";
 import type * as lib_errors from "../lib/errors.js";
+import type * as lib_imports from "../lib/imports.js";
 import type * as lib_issues from "../lib/issues.js";
 import type * as lib_model from "../lib/model.js";
 import type * as lib_names from "../lib/names.js";
@@ -56,7 +59,9 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   comments: typeof comments;
   docs: typeof docs;
+  exports: typeof exports;
   http: typeof http;
+  imports: typeof imports;
   invites: typeof invites;
   issues: typeof issues;
   labels: typeof labels;
@@ -67,6 +72,7 @@ declare const fullApi: ApiFromModules<{
   "lib/comments": typeof lib_comments;
   "lib/defaults": typeof lib_defaults;
   "lib/errors": typeof lib_errors;
+  "lib/imports": typeof lib_imports;
   "lib/issues": typeof lib_issues;
   "lib/model": typeof lib_model;
   "lib/names": typeof lib_names;

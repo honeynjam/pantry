@@ -30,3 +30,26 @@ export async function logActivity(
     via: actor.via,
   });
 }
+
+/**
+ * The one `created` row of an imported issue: the importer is the actor, `via` is "import" and
+ * `from` names the source ("Linear"), so the timeline says it came from the import rather than
+ * looking like the importer typed it in.
+ */
+export async function logImportActivity(
+  ctx: MutationCtx,
+  importer: Doc<"members">,
+  issue: { _id: Id<"issues">; workspaceId: Id<"workspaces"> },
+  source: string,
+  status: string,
+) {
+  await ctx.db.insert("activity", {
+    workspaceId: issue.workspaceId,
+    issueId: issue._id,
+    actorId: importer._id,
+    type: "created",
+    from: source,
+    to: status,
+    via: "import",
+  });
+}

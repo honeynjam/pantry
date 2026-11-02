@@ -3,6 +3,10 @@ import { v } from "convex/values";
 import { avatarValidator } from "./lib/avatar";
 
 export const via = v.union(v.literal("app"), v.literal("mcp"));
+/** Activity rows can also come from an import (Settings → Import and Export), never comments. */
+export const activityVia = v.union(v.literal("app"), v.literal("mcp"), v.literal("import"));
+/** Where imported rows came from. Only Linear (CSV export) so far. */
+export const importSource = v.literal("linear");
 export const category = v.union(
   v.literal("backlog"),
   v.literal("unstarted"),
@@ -190,10 +194,21 @@ export default defineSchema({
     ),
     from: v.optional(v.string()),
     to: v.optional(v.string()),
-    via,
+    // "import": written by an importer; a `created` row's `from` names the source ("Linear").
+    via: activityVia,
   })
     .index("by_issue", ["issueId"])
     .index("by_workspace", ["workspaceId"]),
+
+  // What an import made from which outside record, so importing the same file again finds it instead
+  // of duplicating (convex/imports.ts). `externalId`: an issue's UUID, `project:<id>:<team>` for a
+  // project in one team's space, `team:<name>` for a team's space.
+  importLinks: defineTable({
+    workspaceId: v.id("workspaces"),
+    source: importSource,
+    externalId: v.string(),
+    target: v.union(v.id("issues"), v.id("projects"), v.id("spaces")),
+  }).index("by_workspace_source_and_external", ["workspaceId", "source", "externalId"]),
 
   docs: defineTable({
     workspaceId: v.id("workspaces"),
