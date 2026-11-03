@@ -60,7 +60,7 @@ export const DOCS_NAV: DocSection[] = [
       {
         slug: "import-export",
         title: "Import and export",
-        description: "Move your issues over from Linear, or download your workspace.",
+        description: "Move your issues over from Linear, Asana, Shortcut, Jira or any CSV, or download your workspace.",
       },
       {
         slug: "keyboard-shortcuts",

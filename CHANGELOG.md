@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **Import from Asana, Shortcut, Jira or any CSV.** Settings → Import and Export now lists five sources, each with
+  where to find its export. Asana (one CSV per project, several at once; sections become statuses, subtasks
+  sub-issues), Shortcut (teams become spaces, epics projects, tasks a checklist) and Jira (keeps issue numbers,
+  epics become projects, sub-tasks sub-issues, comments come along, several files for exports past Jira's limit)
+  are marked Beta. **Other CSV** takes ClickUp, Trello, Notion or spreadsheet exports: you pick which column is
+  the title, status, assignee and so on. Every source gets the same review, editable status and priority mapping,
+  and safe re-imports. A file dropped on the wrong source is recognised, with a switch to the right one.
+
 ## [0.1.31] - 2026-11-02
 
 ### Added
