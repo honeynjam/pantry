@@ -13,7 +13,8 @@ import {
 } from "./source";
 
 /**
- * Shortcut's stories CSV (Settings → Export data, or "Export as CSV" on a Space, Epic or Iteration):
+ * Shortcut's stories CSV ("Export as CSV" on the Organization and Workspace dashboard, or on a Space,
+ * Epic or Iteration):
  * id, name, type, requester, owners, description, is_completed, created_at, started_at, updated_at,
  * moved_at, completed_at, estimate, external_tickets, is_blocked, is_a_blocker, due_date, labels,
  * tasks, state, epic_id, epic, iteration, team, workflow, priority, severity, milestone_* (objective_*
@@ -291,7 +292,7 @@ export const shortcut: Adapter = {
   beta: true,
   multiFile: true,
   howToExport:
-    "In Shortcut: Settings → Export data → Export as CSV (the whole workspace), or Export as CSV on a Space, Epic or Iteration.",
+    "In Shortcut: the Organization and Workspace dashboard (app.shortcut.com/organizations) → Export as CSV for everything, or Export as CSV on a Space, Epic or Iteration.",
   exportNote: "Shortcut's CSV has no comments or story links, so those don't come along.",
   teamTitle: "Teams",
   teamHint: "Each Shortcut team goes into a space.",

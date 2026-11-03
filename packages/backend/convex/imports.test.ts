@@ -570,6 +570,9 @@ describe("imports from other sources (Asana, Shortcut, Jira, other CSV)", () => 
     // Linear's link for "10001" is a different link: it creates (with the next free number).
     const [linear] = await as.mutation(api.imports.importLinearIssues, { issues: [one] });
     expect(linear).toMatchObject({ key: "WEB-5", outcome: "created", renumbered: true });
+    // The 0.1.31 name and `source: "linear"` share Linear's links: the same issue is skipped.
+    const [same] = await as.mutation(api.imports.importIssues, { source: "linear", issues: [one] });
+    expect(same).toMatchObject({ key: "WEB-5", outcome: "skipped" });
     // The space Jira made is found again for Jira, not for Linear.
     const context = await as.query(api.imports.context, {
       source: "jira",
