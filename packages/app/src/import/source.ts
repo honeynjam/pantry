@@ -27,6 +27,8 @@ export type Adapter = {
   multiFile: boolean;
   /** One line: where the export is. */
   howToExport: string;
+  /** What else to know before exporting (limits, what the export leaves out). */
+  exportNote?: string;
   /** What becomes a space ("team", "Asana project"…), and the review's hint for it. */
   teamTitle: string;
   teamHint: string;
@@ -64,7 +66,8 @@ export function mergeFiles<I extends SourceIssue>(
   }
   const dropped = new Map<string, number>();
   for (const part of parts)
-    for (const row of part.dropped) dropped.set(row.column, (dropped.get(row.column) ?? 0) + row.count);
+    for (const row of part.dropped)
+      dropped.set(row.column, (dropped.get(row.column) ?? 0) + row.count);
   return {
     issues,
     problems: parts.flatMap((part) => part.problems),

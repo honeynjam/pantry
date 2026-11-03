@@ -158,7 +158,9 @@ async function importBatch(
   const me = await requireOwner(ctx);
   if (issues.length > MAX_ISSUES_PER_BATCH)
     fail("TOO_MANY", `Send at most ${MAX_ISSUES_PER_BATCH} issues per batch.`);
-  if (issues.reduce((sum, issue) => sum + (issue.comments?.length ?? 0), 0) > MAX_COMMENTS_PER_BATCH)
+  if (
+    issues.reduce((sum, issue) => sum + (issue.comments?.length ?? 0), 0) > MAX_COMMENTS_PER_BATCH
+  )
     fail("TOO_MANY", `Send at most ${MAX_COMMENTS_PER_BATCH} comments per batch.`);
   const results: ImportIssueResult[] = [];
   for (const issue of issues) results.push(await importIssue(ctx, me, source, issue));

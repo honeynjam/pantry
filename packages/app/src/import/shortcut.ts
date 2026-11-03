@@ -113,7 +113,9 @@ const truthy = (value: string) => /^(true|yes|1)$/i.test(value.trim());
 
 /** "2026/07/26 12:28:58" with utc_offset "-05:00" → ms. */
 export function shortcutTime(value: string, offset: string): number | undefined {
-  const match = /^(\d{4})[/-](\d{2})[/-](\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/.exec(value.trim());
+  const match = /^(\d{4})[/-](\d{2})[/-](\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/.exec(
+    value.trim(),
+  );
   if (!match) {
     const ms = Date.parse(value);
     return value.trim() && Number.isFinite(ms) ? ms : undefined;
@@ -238,7 +240,10 @@ function parseFile(file: SourceFile, many: boolean, settings: { teamsAsSpaces: b
       ...(started !== undefined ? { startedAt: started } : {}),
       ...(completed !== undefined ? { completedAt: completed } : {}),
       ...(archived
-        ? { archivedAt: when("moved_at") ?? when("updated_at") ?? completed ?? created ?? Date.now() }
+        ? {
+            archivedAt:
+              when("moved_at") ?? when("updated_at") ?? completed ?? created ?? Date.now(),
+          }
         : {}),
       ...(dueDate ? { dueDate } : {}),
       extras,
@@ -287,6 +292,7 @@ export const shortcut: Adapter = {
   multiFile: true,
   howToExport:
     "In Shortcut: Settings → Export data → Export as CSV (the whole workspace), or Export as CSV on a Space, Epic or Iteration.",
+  exportNote: "Shortcut's CSV has no comments or story links, so those don't come along.",
   teamTitle: "Teams",
   teamHint: "Each Shortcut team goes into a space.",
   foldFields: SHORTCUT_FOLD_FIELDS,

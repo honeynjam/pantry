@@ -526,10 +526,17 @@ describe("imports from other sources (Asana, Shortcut, Jira, other CSV)", () => 
       member.mutation(api.imports.prepare, { source: "jira", teams: [team()], labels: [] }),
     ).rejects.toThrow(/owner/i);
     await expect(
-      member.query(api.imports.context, { source: "asana", teams: [], emails: [], externalIds: [] }),
+      member.query(api.imports.context, {
+        source: "asana",
+        teams: [],
+        emails: [],
+        externalIds: [],
+      }),
     ).rejects.toThrow(/owner/i);
     await expect(
-      t.withIdentity(outsider).mutation(api.imports.importIssues, { source: "shortcut", issues: [] }),
+      t
+        .withIdentity(outsider)
+        .mutation(api.imports.importIssues, { source: "shortcut", issues: [] }),
     ).rejects.toThrow();
   });
 
@@ -537,11 +544,25 @@ describe("imports from other sources (Asana, Shortcut, Jira, other CSV)", () => 
     const { t, as, status } = await setUp();
     const jira = await as.mutation(api.imports.prepare, {
       source: "jira",
-      teams: [{ ...team(), team: "Web Shop", prefix: "WEB", maxNumber: 4, projects: [], target: { name: "Web", key: "WEB" } }],
+      teams: [
+        {
+          ...team(),
+          team: "Web Shop",
+          prefix: "WEB",
+          maxNumber: 4,
+          projects: [],
+          target: { name: "Web", key: "WEB" },
+        },
+      ],
       labels: [],
     });
     const web = jira.teams[0]!.spaceId;
-    const one = issue({ externalId: "10001", sourceKey: "WEB-1", spaceId: web, statusId: status("Todo") });
+    const one = issue({
+      externalId: "10001",
+      sourceKey: "WEB-1",
+      spaceId: web,
+      statusId: status("Todo"),
+    });
     const [first] = await as.mutation(api.imports.importIssues, { source: "jira", issues: [one] });
     expect(first).toMatchObject({ key: "WEB-1", outcome: "created" });
     const [again] = await as.mutation(api.imports.importIssues, { source: "jira", issues: [one] });
@@ -556,7 +577,10 @@ describe("imports from other sources (Asana, Shortcut, Jira, other CSV)", () => 
       emails: [],
       externalIds: ["10001"],
     });
-    expect(context).toMatchObject({ teams: { "Web Shop": { spaceId: web } }, imported: { "10001": "WEB-1" } });
+    expect(context).toMatchObject({
+      teams: { "Web Shop": { spaceId: web } },
+      imported: { "10001": "WEB-1" },
+    });
     const other = await as.query(api.imports.context, {
       source: "asana",
       teams: ["Web Shop"],
@@ -572,7 +596,15 @@ describe("imports from other sources (Asana, Shortcut, Jira, other CSV)", () => 
     const { as, status } = await setUp();
     const prepared = await as.mutation(api.imports.prepare, {
       source: "asana",
-      teams: [{ team: "Website", prefix: "", maxNumber: 0, projects: [], target: { name: "Website", key: "WR" } }],
+      teams: [
+        {
+          team: "Website",
+          prefix: "",
+          maxNumber: 0,
+          projects: [],
+          target: { name: "Website", key: "WR" },
+        },
+      ],
       labels: [],
     });
     const spaceId = prepared.teams[0]!.spaceId;
@@ -625,9 +657,9 @@ describe("imports from other sources (Asana, Shortcut, Jira, other CSV)", () => 
       ...issue({ externalId: `b${index}`, sourceKey: "", spaceId, statusId: status("Todo") }),
       comments: Array.from({ length: 100 }, () => "c"),
     }));
-    await expect(as.mutation(api.imports.importIssues, { source: "jira", issues: batch })).rejects.toThrow(
-      /at most 1000 comments per batch/,
-    );
+    await expect(
+      as.mutation(api.imports.importIssues, { source: "jira", issues: batch }),
+    ).rejects.toThrow(/at most 1000 comments per batch/);
   });
 });
 

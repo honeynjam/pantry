@@ -1,12 +1,15 @@
 "use client";
 
 import { Button } from "@pantry/ui/components/button";
+import { cn } from "@pantry/ui/lib/utils";
 import { useConvex } from "convex/react";
 import { ChevronRightIcon, DownloadIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { collectExport, downloadText, exportFileName, issuesCsv } from "../../import/export";
-import { LinearImport } from "../../import/linear-import";
+import type { SourceId } from "../../import/engine";
+import { BetaBadge, ImportFlow } from "../../import/import-flow";
+import { SOURCES } from "../../import/sources";
 import type { WorkspaceData } from "../../shell/app-shell";
 import { describeError } from "../form-error";
 import { SettingsGroup, SettingsList, SettingsPanel } from "./parts";
@@ -17,38 +20,45 @@ import { SettingsGroup, SettingsList, SettingsPanel } from "./parts";
  */
 export function ImportExportSettings({ data }: { data: WorkspaceData }) {
   const isOwner = data.me.role === "owner";
-  const [importing, setImporting] = useState(false);
+  const [importing, setImporting] = useState<SourceId | null>(null);
   return (
     <SettingsPanel
       title="Import and Export"
-      description="Bring your issues in from another tracker, or download everything in this workspace."
+      description="Bring your issues in from another tracker or a spreadsheet, or download everything in this workspace."
     >
       {importing ? (
-        <LinearImport data={data} onClose={() => setImporting(false)} />
+        <ImportFlow
+          key={importing}
+          data={data}
+          source={importing}
+          onClose={() => setImporting(null)}
+        />
       ) : (
         <SettingsGroup title="Import">
           {isOwner ? (
             <SettingsList>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => setImporting(true)}
-                  className="group hover:bg-accent flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm transition-colors duration-(--duration-instant)"
-                >
-                  <LinearMark />
-                  <span className="flex min-w-0 flex-1 flex-col">
-                    <span className="text-foreground">Linear</span>
-                    <span className="text-muted-foreground text-xs">
-                      From Linear&apos;s CSV export: teams, issues, sub-issues, projects, labels and
-                      statuses. You review everything before it&apos;s written.
+              {SOURCES.map((source) => (
+                <li key={source.id}>
+                  <button
+                    type="button"
+                    onClick={() => setImporting(source.id)}
+                    className="group hover:bg-accent flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm transition-colors duration-(--duration-instant)"
+                  >
+                    <SourceMark letter={MARKS[source.id]} />
+                    <span className="flex min-w-0 flex-1 flex-col">
+                      <span className="text-foreground flex items-center gap-2">
+                        {source.name}
+                        {source.beta && <BetaBadge />}
+                      </span>
+                      <span className="text-muted-foreground text-xs">{source.howToExport}</span>
                     </span>
-                  </span>
-                  <ChevronRightIcon
-                    className="text-faint-foreground group-hover:text-muted-foreground size-3.5"
-                    aria-hidden
-                  />
-                </button>
-              </li>
+                    <ChevronRightIcon
+                      className="text-faint-foreground group-hover:text-muted-foreground size-3.5"
+                      aria-hidden
+                    />
+                  </button>
+                </li>
+              ))}
             </SettingsList>
           ) : (
             <p className="text-muted-foreground text-sm">
@@ -63,14 +73,25 @@ export function ImportExportSettings({ data }: { data: WorkspaceData }) {
   );
 }
 
+const MARKS: Record<SourceId, string> = {
+  linear: "L",
+  asana: "A",
+  shortcut: "S",
+  jira: "J",
+  csv: "CSV",
+};
+
 /** A monochrome stand-in for the source's logo: settings stay colourless. */
-function LinearMark() {
+function SourceMark({ letter }: { letter: string }) {
   return (
     <span
       aria-hidden
-      className="border-border bg-gray-2 text-foreground flex size-7 shrink-0 items-center justify-center rounded-md border font-mono text-xs"
+      className={cn(
+        "border-border bg-gray-2 text-foreground flex h-7 min-w-7 shrink-0 items-center justify-center rounded-md border px-1 font-mono text-xs",
+        letter.length > 1 && "text-2xs",
+      )}
     >
-      L
+      {letter}
     </span>
   );
 }

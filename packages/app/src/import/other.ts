@@ -39,17 +39,74 @@ export type CsvField = (typeof CSV_FIELDS)[number]["id"];
 
 /** Header names each field is guessed from, normalised (lowercase letters and digits only). */
 const GUESSES: Record<CsvField, string[]> = {
-  title: ["title", "name", "summary", "taskname", "cardname", "subject", "issue", "task", "storyname"],
-  description: ["description", "notes", "body", "details", "desc", "content", "taskcontent", "carddescription", "text"],
+  title: [
+    "title",
+    "name",
+    "summary",
+    "taskname",
+    "cardname",
+    "subject",
+    "issue",
+    "task",
+    "storyname",
+  ],
+  description: [
+    "description",
+    "notes",
+    "body",
+    "details",
+    "desc",
+    "content",
+    "taskcontent",
+    "carddescription",
+    "text",
+  ],
   status: ["status", "state", "stage", "column", "listname", "list", "section", "sectioncolumn"],
   priority: ["priority", "prio", "importance", "urgency"],
   labels: ["labels", "label", "tags", "tag", "categories", "category"],
-  assignee: ["assigneeemail", "assignee", "assignees", "owner", "owners", "assignedto", "members", "responsible"],
+  assignee: [
+    "assigneeemail",
+    "assignee",
+    "assignees",
+    "owner",
+    "owners",
+    "assignedto",
+    "members",
+    "responsible",
+  ],
   dueDate: ["duedate", "due", "deadline", "dueon", "datedue", "enddate"],
   created: ["created", "createdat", "datecreated", "createddate", "creationdate"],
-  parent: ["parent", "parentid", "parenttask", "parentname", "parentissue", "parentkey", "parentitem"],
-  externalId: ["id", "taskid", "issueid", "cardid", "key", "issuekey", "uuid", "itemid", "ticketid"],
-  group: ["space", "spacename", "team", "board", "boardname", "group", "workspace", "foldername", "client"],
+  parent: [
+    "parent",
+    "parentid",
+    "parenttask",
+    "parentname",
+    "parentissue",
+    "parentkey",
+    "parentitem",
+  ],
+  externalId: [
+    "id",
+    "taskid",
+    "issueid",
+    "cardid",
+    "key",
+    "issuekey",
+    "uuid",
+    "itemid",
+    "ticketid",
+  ],
+  group: [
+    "space",
+    "spacename",
+    "team",
+    "board",
+    "boardname",
+    "group",
+    "workspace",
+    "foldername",
+    "client",
+  ],
   project: ["project", "projectname", "epic", "milestone", "listname"],
 };
 
@@ -76,7 +133,9 @@ export function guessColumns(headers: string[]): Record<CsvField, string> {
   ];
   for (const field of order) {
     const header = GUESSES[field]
-      .map((guess) => headers.find((candidate) => norm(candidate) === guess && !taken.has(candidate)))
+      .map((guess) =>
+        headers.find((candidate) => norm(candidate) === guess && !taken.has(candidate)),
+      )
       .find(Boolean);
     result[field] = header ?? "";
     if (header) taken.add(header);
@@ -117,8 +176,13 @@ export function parseOtherCsv(files: SourceFile[], columns: Record<string, strin
   const group = pick("group");
   const fallbackTeam = file.name.replace(/\.(csv|tsv|txt)$/i, "").trim() || "Imported";
   const mapped = new Set(CSV_FIELDS.map((field) => pick(field.id)).filter(Boolean));
-  const others = headers.filter((header, position) => header && !mapped.has(header) && headers.indexOf(header) === position);
-  const dateValues = rows.flatMap((row) => [c.get(row, pick("dueDate")), c.get(row, pick("created"))]);
+  const others = headers.filter(
+    (header, position) => header && !mapped.has(header) && headers.indexOf(header) === position,
+  );
+  const dateValues = rows.flatMap((row) => [
+    c.get(row, pick("dueDate")),
+    c.get(row, pick("created")),
+  ]);
   const order = guessDayOrder(dateValues.filter(Boolean), "mdy");
   const problems: string[] = [];
   const unreadable: string[] = [];
@@ -130,7 +194,8 @@ export function parseOtherCsv(files: SourceFile[], columns: Record<string, strin
     const line = index + 1;
     const title = c.get(row, pick("title"));
     if (!title) {
-      if (row.some((cell) => cell.trim())) problems.push(`${rowName(line, file.name, false)} has no title, so it's left out.`);
+      if (row.some((cell) => cell.trim()))
+        problems.push(`${rowName(line, file.name, false)} has no title, so it's left out.`);
       return;
     }
     const team = (group && c.get(row, group)) || fallbackTeam;
@@ -157,11 +222,13 @@ export function parseOtherCsv(files: SourceFile[], columns: Record<string, strin
     if (dueRaw && !dueDate) unreadable.push(`${sourceId || `row ${line}`} "${dueRaw}"`);
     const createdRaw = c.get(row, pick("created"));
     const created = parseDateTime(createdRaw, order);
-    if (createdRaw && created === undefined) unreadable.push(`${sourceId || `row ${line}`} "${createdRaw}"`);
+    if (createdRaw && created === undefined)
+      unreadable.push(`${sourceId || `row ${line}`} "${createdRaw}"`);
     const project = c.get(row, pick("project"));
 
     const extras: SourceIssue["extras"] = [];
-    if (people.length > 1) extras.push({ field: "people", label: "Other assignees", value: people.slice(1).join(", ") });
+    if (people.length > 1)
+      extras.push({ field: "people", label: "Other assignees", value: people.slice(1).join(", ") });
     for (const header of others) {
       const value = c.get(row, header);
       if (value) extras.push({ field: "columns", label: header, value: oneLine(value) });
@@ -204,9 +271,12 @@ export function parseOtherCsv(files: SourceFile[], columns: Record<string, strin
     }
   }
 
-  const byId = new Map(issues.filter((issue) => issue.sourceId).map((issue) => [nameKey(issue.sourceId), issue]));
+  const byId = new Map(
+    issues.filter((issue) => issue.sourceId).map((issue) => [nameKey(issue.sourceId), issue]),
+  );
   const byTitle = new Map<string, (typeof issues)[number][]>();
-  for (const issue of issues) byTitle.set(nameKey(issue.title), [...(byTitle.get(nameKey(issue.title)) ?? []), issue]);
+  for (const issue of issues)
+    byTitle.set(nameKey(issue.title), [...(byTitle.get(nameKey(issue.title)) ?? []), issue]);
   let ambiguous = 0;
   for (const issue of issues) {
     const value = issue.parentValue;
@@ -214,7 +284,9 @@ export function parseOtherCsv(files: SourceFile[], columns: Record<string, strin
     issue.parentRef = value;
     const parent =
       byId.get(nameKey(value)) ??
-      ((byTitle.get(nameKey(value)) ?? []).length === 1 ? byTitle.get(nameKey(value))![0] : undefined);
+      ((byTitle.get(nameKey(value)) ?? []).length === 1
+        ? byTitle.get(nameKey(value))![0]
+        : undefined);
     if (parent && parent !== issue) issue.parentId = parent.externalId;
     else if ((byTitle.get(nameKey(value)) ?? []).length > 1) {
       ambiguous += 1;
@@ -228,7 +300,9 @@ export function parseOtherCsv(files: SourceFile[], columns: Record<string, strin
       "No ID column: importing this file again matches rows by title, so a row whose title changed comes in again.",
     );
   if (ambiguous)
-    warnings.push(`${ambiguous} rows name a parent that several rows share, so they come in as normal issues.`);
+    warnings.push(
+      `${ambiguous} rows name a parent that several rows share, so they come in as normal issues.`,
+    );
   if (unreadable.length)
     warnings.push(
       `${unreadable.length} ${unreadable.length === 1 ? "date" : "dates"} couldn't be read and ${unreadable.length === 1 ? "is" : "are"} left out: ${someOf(unreadable)}.`,

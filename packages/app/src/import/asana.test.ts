@@ -70,7 +70,9 @@ describe("Asana CSV", () => {
       "Marketing",
     ]);
     // A task in both projects comes in once, in the first file's project, naming the other.
-    expect(together.plan.drafts.filter((row) => row.externalId === "1209000000000002")).toHaveLength(1);
+    expect(
+      together.plan.drafts.filter((row) => row.externalId === "1209000000000002"),
+    ).toHaveLength(1);
     expect(together.draft("1209000000000002").description).toContain(
       "- Also in Asana projects: Marketing",
     );

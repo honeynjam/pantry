@@ -90,7 +90,9 @@ function partsOf(value: string, order: DayOrder): Parts | undefined {
   match = /^(\d{1,2})\.?[-/ ]([\p{L}]+)\.?[-/ ,]+(\d{2}|\d{4})(?:,?\s+(.*))?$/u.exec(text);
   if (match) {
     const month = monthOf(match[2]!);
-    return month ? withTime(fullYear(Number(match[3])), month, Number(match[1]), match[4]) : undefined;
+    return month
+      ? withTime(fullYear(Number(match[3])), month, Number(match[1]), match[4])
+      : undefined;
   }
   // Nov 3, 2026 10:15 AM; November 3 2026
   match = /^([\p{L}]+)\.? (\d{1,2})(?:st|nd|rd|th)?,? (\d{4})(?:,?\s+(.*))?$/u.exec(text);
@@ -127,7 +129,10 @@ const ISO_WITH_ZONE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{
  * A point in time, in ms. ISO strings with a zone are exact; other times are read as the
  * importer's local time (exports don't say which zone they're in); a date alone is noon UTC.
  */
-export function parseDateTime(value: string | undefined, order: DayOrder = "dmy"): number | undefined {
+export function parseDateTime(
+  value: string | undefined,
+  order: DayOrder = "dmy",
+): number | undefined {
   const text = value?.trim();
   if (!text) return undefined;
   if (ISO_WITH_ZONE.test(text)) {

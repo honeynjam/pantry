@@ -15,7 +15,11 @@ describe("Jira CSV", () => {
     const { issues } = parseJiraCsv([FIRST]);
     const card = issues.find((issue) => issue.key === "WEB-2")!;
     expect(card.labels).toEqual(["checkout", "frontend"]);
-    expect(card.extras).toContainEqual({ field: "sprint", label: "Sprints", value: "WEB Sprint 4, WEB Sprint 5" });
+    expect(card.extras).toContainEqual({
+      field: "sprint",
+      label: "Sprints",
+      value: "WEB Sprint 4, WEB Sprint 5",
+    });
     expect(card.comments).toHaveLength(2);
   });
 
@@ -33,8 +37,14 @@ describe("Jira CSV", () => {
         "See [the spec](https://example.com/spec) and ask @Bo Lindqvist.",
       ].join("\n"),
     );
-    expect(jiraToMarkdown("h1. Title\n* one\n** two\n# first\n{{code}} and _soft_ and -gone-\n{quote}said{quote}")).toBe(
-      ["# Title", "- one", "  - two", "1. first", "`code` and *soft* and ~~gone~~", "> said"].join("\n"),
+    expect(
+      jiraToMarkdown(
+        "h1. Title\n* one\n** two\n# first\n{{code}} and _soft_ and -gone-\n{quote}said{quote}",
+      ),
+    ).toBe(
+      ["# Title", "- one", "  - two", "1. first", "`code` and *soft* and ~~gone~~", "> said"].join(
+        "\n",
+      ),
     );
   });
 
@@ -72,7 +82,10 @@ describe("Jira CSV", () => {
       "Web Shop": { kind: "new", name: "Web Shop", key: "WEB" },
       "Ops Desk": { kind: "new", name: "Ops Desk", key: "OPS" },
     });
-    expect(plan.teams.find((team) => team.team === "Web Shop")).toMatchObject({ prefix: "WEB", maxNumber: 5 });
+    expect(plan.teams.find((team) => team.team === "Web Shop")).toMatchObject({
+      prefix: "WEB",
+      maxNumber: 5,
+    });
     expect(plan.drafts.every((row) => /^(WEB|OPS)-\d+$/.test(row.sourceKey))).toBe(true);
   });
 
@@ -115,7 +128,9 @@ describe("Jira CSV", () => {
     // Only an account id, matched through the Assignee Id column.
     expect(draft("WEB-4").comments![0]).toMatch(/^\*Cy Okafor in Jira/);
     expect(plan.comments).toBe(3);
-    expect(run(jira, [FIRST], { patch: { comments: false } }).draft("WEB-2").comments).toBeUndefined();
+    expect(
+      run(jira, [FIRST], { patch: { comments: false } }).draft("WEB-2").comments,
+    ).toBeUndefined();
   });
 
   it("folds links, sprints, story points and attachments into the note, and matches people by display name", () => {
@@ -157,7 +172,10 @@ describe("Jira CSV", () => {
 
   it("warns when a file stops at Jira's export limit, and rejects files that aren't Jira's", () => {
     const head = "Summary,Issue key,Issue id,Issue Type,Status\n";
-    const rows = Array.from({ length: 1000 }, (_, index) => `Task ${index},ENG-${index + 1},${index + 1},Task,To Do`).join("\n");
+    const rows = Array.from(
+      { length: 1000 },
+      (_, index) => `Task ${index},ENG-${index + 1},${index + 1},Task,To Do`,
+    ).join("\n");
     const { warnings } = parseJiraCsv([{ name: "big.csv", text: head + rows }]);
     expect(warnings?.some((warning) => warning.includes("exactly 1,000 rows"))).toBe(true);
     expect(() => parseJiraCsv([{ name: "x.csv", text: "Name,Email\nA,b@example.com\n" }])).toThrow(

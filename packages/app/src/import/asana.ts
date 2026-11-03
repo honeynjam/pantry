@@ -1,10 +1,16 @@
 import { Columns, parseCsvGrid } from "./csv";
 import { guessDayOrder, parseDateTime, parseDay, type DayOrder } from "./dates";
-import { BASE_FOLD_FIELDS, list, nameKey, type Parsed, type Priority, type SourceIssue } from "./engine";
+import {
+  BASE_FOLD_FIELDS,
+  list,
+  nameKey,
+  type Parsed,
+  type Priority,
+  type SourceIssue,
+} from "./engine";
 import {
   mergeFiles,
   oneLine,
-  rowName,
   shortHash,
   someOf,
   type Adapter,
@@ -96,7 +102,12 @@ export function fileProject(file: SourceFile, projectsPerRow: string[][]): strin
     for (const project of new Set(projects)) counts.set(project, (counts.get(project) ?? 0) + 1);
   const best = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
   if (best) return best[0];
-  return file.name.replace(/\.csv$/i, "").replace(/[_-]+/g, " ").trim() || "Asana";
+  return (
+    file.name
+      .replace(/\.csv$/i, "")
+      .replace(/[_-]+/g, " ")
+      .trim() || "Asana"
+  );
 }
 
 function parseFile(file: SourceFile, many: boolean) {
@@ -152,15 +163,20 @@ function parseFile(file: SourceFile, many: boolean) {
     const section = c.get(row, "Section/Column");
     const name = c.get(row, "Assignee");
     const email = c.get(row, "Assignee Email");
-    const assignee = email && name && name.toLowerCase() !== email.toLowerCase() ? `${name} <${email}>` : email || name;
+    const assignee =
+      email && name && name.toLowerCase() !== email.toLowerCase()
+        ? `${name} <${email}>`
+        : email || name;
     const priorityName = priorityColumn ? c.get(row, priorityColumn) : "";
 
     const extras: SourceIssue["extras"] = [];
     const start = c.get(row, "Start Date");
-    if (start) extras.push({ field: "dates", label: "Start date", value: parseDay(start, order) ?? start });
+    if (start)
+      extras.push({ field: "dates", label: "Start date", value: parseDay(start, order) ?? start });
     const blockedBy = c.get(row, "Blocked By (Dependencies)");
     const blocking = c.get(row, "Blocking (Dependencies)");
-    if (blockedBy) extras.push({ field: "relations", label: "Blocked by", value: oneLine(blockedBy) });
+    if (blockedBy)
+      extras.push({ field: "relations", label: "Blocked by", value: oneLine(blockedBy) });
     if (blocking) extras.push({ field: "relations", label: "Blocking", value: oneLine(blocking) });
     const others = projectsPerRow[index]!.filter((name) => name !== project);
     if (others.length)
@@ -297,6 +313,8 @@ export const asana: Adapter = {
   multiFile: true,
   howToExport:
     "In Asana: open the project, click the ⌄ next to its name → Export/Print → CSV. One file per project; add them all here.",
+  exportNote:
+    "Asana's CSV has no comments, attachments or creator. Subtasks come along as rows that name their parent task.",
   teamTitle: "Asana projects",
   teamHint: "Each Asana project goes into a space.",
   foldFields: ASANA_FOLD_FIELDS,

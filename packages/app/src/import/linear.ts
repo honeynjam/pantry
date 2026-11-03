@@ -259,7 +259,8 @@ export const linear: Adapter = {
   defaultSettings: () => ({ toggles: {}, columns: {} }),
   toggles: () => [],
   parse: (files) => {
-    if (files.length !== 1) throw new Error("Linear exports everything in one file: pick just that one.");
+    if (files.length !== 1)
+      throw new Error("Linear exports everything in one file: pick just that one.");
     return parseLinearCsv(files[0]!.text);
   },
 };

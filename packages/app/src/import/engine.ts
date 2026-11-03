@@ -215,8 +215,7 @@ export type ImportContext = {
 };
 
 export type TeamTarget =
-  | { kind: "new"; name: string; key: string }
-  | { kind: "existing"; spaceId: string };
+  { kind: "new"; name: string; key: string } | { kind: "existing"; spaceId: string };
 
 export type ReviewOptions = {
   teams: Record<string, TeamTarget>;
@@ -235,7 +234,10 @@ export type ReviewOptions = {
 const CATEGORY_WORDS: [StatusCategory, RegExp][] = [
   // "Ready for Development" is waiting to start, not "develop" in progress.
   ["unstarted", /ready for (dev|development|work|pickup)\b/],
-  ["canceled", /cancel|duplicate|won'?t|wontfix|reject|invalid|obsolete|declined|cannot reproduce|incomplete|not a bug/],
+  [
+    "canceled",
+    /cancel|duplicate|won'?t|wontfix|reject|invalid|obsolete|declined|cannot reproduce|incomplete|not a bug/,
+  ],
   ["done", /done|complete|closed|shipped|released|merged|resolved|finished|deployed/],
   ["review", /review|qa\b|testing|verify|approval|deploy|staging/],
   ["started", /progress|started|doing|active|working|develop/],
@@ -299,7 +301,10 @@ export function suggestKey(prefix: string, team: string, fallback = "LIN"): stri
   ).slice(0, 10);
   if (SPACE_KEY_PATTERN.test(key)) return key;
   // One word: its first letters ("Website" → "WEB").
-  const word = team.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 3);
+  const word = team
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 3);
   return SPACE_KEY_PATTERN.test(word) ? word : fallback;
 }
 
@@ -311,7 +316,10 @@ export function shortKey(name: string, fallback: string): string {
     .map((word) => word[0]!.toUpperCase())
     .join("");
   if (words.length >= 2 && SPACE_KEY_PATTERN.test(initials)) return initials;
-  const letters = name.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 3);
+  const letters = name
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 3);
   return SPACE_KEY_PATTERN.test(letters) ? letters : fallback;
 }
 

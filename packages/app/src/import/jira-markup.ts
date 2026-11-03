@@ -3,7 +3,10 @@
  * parts: headings, bold, italic, strike, monospace, code and noformat blocks, quotes, lists, links,
  * mentions and tables. Anything else is left as it is: still readable, just not formatted.
  */
-export function jiraToMarkdown(text: string, people: (id: string) => string | undefined = () => undefined): string {
+export function jiraToMarkdown(
+  text: string,
+  people: (id: string) => string | undefined = () => undefined,
+): string {
   if (!text) return "";
   const out: string[] = [];
   const lines = text
@@ -50,7 +53,8 @@ export function jiraToMarkdown(text: string, people: (id: string) => string | un
     let line = raw;
     const heading = /^\s*h([1-6])\.\s+(.*)$/.exec(line);
     if (heading) line = `${"#".repeat(Number(heading[1]))} ${inline(heading[2]!, people)}`;
-    else if (/^\s*bq\.\s+/.test(line)) line = `> ${inline(line.replace(/^\s*bq\.\s+/, ""), people)}`;
+    else if (/^\s*bq\.\s+/.test(line))
+      line = `> ${inline(line.replace(/^\s*bq\.\s+/, ""), people)}`;
     else if (/^\s*----\s*$/.test(line)) line = "---";
     else {
       const bullet = /^\s*([*#-]+)\s+(.*)$/.exec(line);
@@ -60,10 +64,16 @@ export function jiraToMarkdown(text: string, people: (id: string) => string | un
         const ordered = marks.endsWith("#");
         line = `${"  ".repeat(depth)}${ordered ? "1." : "-"} ${inline(bullet[2]!, people)}`;
       } else if (/^\s*\|\|/.test(line)) {
-        const cells = line.trim().replace(/^\|\||\|\|$/g, "").split("||");
+        const cells = line
+          .trim()
+          .replace(/^\|\||\|\|$/g, "")
+          .split("||");
         line = `| ${cells.map((cell) => inline(cell.trim(), people)).join(" | ")} |\n|${cells.map(() => " --- ").join("|")}|`;
       } else if (/^\s*\|/.test(line)) {
-        const cells = line.trim().replace(/^\||\|$/g, "").split("|");
+        const cells = line
+          .trim()
+          .replace(/^\||\|$/g, "")
+          .split("|");
         line = `| ${cells.map((cell) => inline(cell.trim(), people)).join(" | ")} |`;
       } else line = inline(line, people);
     }
@@ -79,12 +89,15 @@ function inline(text: string, people: (id: string) => string | undefined): strin
     // {{monospace}} first, so nothing inside it is touched.
     .replace(/\{\{([^}]+)\}\}/g, (_, inner: string) => {
       code.push(`\`${inner}\``);
-      return `\u0000${code.length - 1}\u0000`;
+      return `\uE000${code.length - 1}\uE000`;
     })
     // [~accountid:5b10…] and [~username]
     .replace(/\[~(?:accountid:)?([^\]]+)\]/g, (_, id: string) => `@${people(id) ?? id}`)
     // [text|https://…] and [https://…]
-    .replace(/\[([^\]|]+)\|([^\]]+)\]/g, (_, label: string, url: string) => `[${label}](${url.trim()})`)
+    .replace(
+      /\[([^\]|]+)\|([^\]]+)\]/g,
+      (_, label: string, url: string) => `[${label}](${url.trim()})`,
+    )
     .replace(/\[((?:https?|mailto):[^\]\s]+)\]/g, "<$1>")
     // !image.png! and !image.png|thumbnail!
     .replace(/!([^!\s|]+\.(?:png|jpe?g|gif|svg|webp))(?:\|[^!]*)?!/gi, "(image: $1)")
@@ -95,5 +108,5 @@ function inline(text: string, people: (id: string) => string | undefined): strin
     .replace(/(^|[\s(])-(\S(?:[^-]*\S)?)-(?=[\s).,:;!?]|$)/g, "$1~~$2~~")
     .replace(/(^|[\s(])\+(\S(?:[^+]*\S)?)\+(?=[\s).,:;!?]|$)/g, "$1$2")
     .replace(/(^|[\s(])\?\?(\S(?:.*?\S)?)\?\?(?=[\s).,:;!?]|$)/g, "$1*$2*");
-  return line.replace(/\u0000(\d+)\u0000/g, (_, index: string) => code[Number(index)]!);
+  return line.replace(/\uE000(\d+)\uE000/g, (_, index: string) => code[Number(index)]!);
 }

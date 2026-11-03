@@ -49,7 +49,7 @@ export type Grid = {
 };
 
 export function parseCsvGrid(text: string): Grid {
-  const result = Papa.parse<string[]>(text.replace(/^﻿/, ""), {
+  const result = Papa.parse<string[]>(text.replace(/^\uFEFF/, ""), {
     header: false,
     skipEmptyLines: "greedy",
   });
@@ -122,7 +122,7 @@ export class Columns {
 
 /** Just the header row (trimmed), or [] when the text isn't CSV. */
 export function csvHeaders(text: string): string[] {
-  const result = Papa.parse<string[]>(text.replace(/^﻿/, ""), {
+  const result = Papa.parse<string[]>(text.replace(/^\uFEFF/, ""), {
     header: false,
     preview: 1,
     skipEmptyLines: "greedy",

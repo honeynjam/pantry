@@ -36,7 +36,8 @@ const issue = (patch: Partial<SourceIssue>): SourceIssue => ({
 
 describe("dates", () => {
   it("reads the formats trackers export, in several languages", () => {
-    const local = (y: number, m: number, d: number, h = 0, min = 0) => new Date(y, m - 1, d, h, min).getTime();
+    const local = (y: number, m: number, d: number, h = 0, min = 0) =>
+      new Date(y, m - 1, d, h, min).getTime();
     expect(parseDateTime("03/Nov/26 10:15 AM")).toBe(local(2026, 11, 3, 10, 15));
     expect(parseDateTime("03/Nov/26 10:15 PM")).toBe(local(2026, 11, 3, 22, 15));
     expect(parseDateTime("03/Okt/26 10:15")).toBe(local(2026, 10, 3, 10, 15));
@@ -87,7 +88,10 @@ describe("engine", () => {
     expect(shortKey("Web Shop", "X")).toBe("WS");
     expect(shortKey("!", "IMP")).toBe("IMP");
     const parsed: Parsed = {
-      issues: [issue({ team: "Pantry", externalId: "a" }), issue({ team: "Panther", externalId: "b" })],
+      issues: [
+        issue({ team: "Pantry", externalId: "a" }),
+        issue({ team: "Panther", externalId: "b" }),
+      ],
       problems: [],
       dropped: [],
     };
@@ -108,7 +112,10 @@ describe("engine", () => {
       problems: [],
       dropped: [],
     };
-    const next = carryOptions(changed, defaultOptions(more, summarize(more, []), workspace, emptyContext));
+    const next = carryOptions(
+      changed,
+      defaultOptions(more, summarize(more, []), workspace, emptyContext),
+    );
     expect(next.statuses).toEqual({ todo: "s-review", done: "s-done" });
     expect(next.includeArchived).toBe(true);
     expect(Object.keys(next.teams)).toEqual(["T", "U"]);
@@ -123,7 +130,14 @@ describe("engine", () => {
     const summary = summarize(parsed, []);
     expect(summary.priorities).toEqual([{ key: "p2", name: "P2", priority: 3, count: 1 }]);
     const options = defaultOptions(parsed, summary, workspace, emptyContext);
-    const plan = planImport(parsed, summary, { ...options, priorities: { p2: 1 } }, workspace, emptyContext, "X");
+    const plan = planImport(
+      parsed,
+      summary,
+      { ...options, priorities: { p2: 1 } },
+      workspace,
+      emptyContext,
+      "X",
+    );
     expect(plan.drafts[0]!.priority).toBe(1);
   });
 
@@ -140,7 +154,10 @@ describe("engine", () => {
     expect(draft!.comments).toHaveLength(MAX_COMMENTS);
     expect(draft!.comments![0]).toBe("*Bo in Jira:*\n\nComment 5");
     expect(draft!.description).toContain("- 5 older comments in Jira aren't imported");
-    const drafts = Array.from({ length: 6 }, (_, index) => ({ ...draft!, externalId: `x${index}` }));
+    const drafts = Array.from({ length: 6 }, (_, index) => ({
+      ...draft!,
+      externalId: `x${index}`,
+    }));
     const prepared = { teams: [{ team: "T", spaceId: "s", projects: {} }], labels: {} };
     expect(toBatches(drafts, prepared).map((batch) => batch.length)).toEqual([5, 1]);
   });

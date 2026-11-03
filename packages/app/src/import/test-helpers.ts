@@ -58,7 +58,10 @@ export function run(
   } = {},
 ) {
   const defaults = adapter.defaultSettings(files);
-  const parsed = adapter.parse(files, { ...defaults, toggles: { ...defaults.toggles, ...toggles } });
+  const parsed = adapter.parse(files, {
+    ...defaults,
+    toggles: { ...defaults.toggles, ...toggles },
+  });
   const summary = summarize(parsed, adapter.foldFields);
   const options = {
     ...defaultOptions(parsed, summary, workspace, context, adapter.keyFallback),
@@ -67,7 +70,8 @@ export function run(
   const plan = planImport(parsed, summary, options, workspace, context, adapter.noteName);
   const draft = (key: string) => {
     const found = plan.drafts.find(
-      (row) => row.sourceKey === key || row.externalId === key || row.externalId.endsWith(`:${key}`),
+      (row) =>
+        row.sourceKey === key || row.externalId === key || row.externalId.endsWith(`:${key}`),
     );
     if (!found) throw new Error(`No draft for ${key}`);
     return found;
@@ -79,6 +83,8 @@ export function run(
 export function importedAll(plan: { drafts: { externalId: string }[] }): ImportContext {
   return {
     ...emptyContext,
-    imported: Object.fromEntries(plan.drafts.map((row, index) => [row.externalId, `X-${index + 1}`])),
+    imported: Object.fromEntries(
+      plan.drafts.map((row, index) => [row.externalId, `X-${index + 1}`]),
+    ),
   };
 }

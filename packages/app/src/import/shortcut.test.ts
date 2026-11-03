@@ -56,7 +56,11 @@ describe("Shortcut CSV", () => {
       "ready for review": "s-review",
       "ready for development": "s-todo",
     });
-    expect(draft("102")).toMatchObject({ statusId: "s-done", priority: 1, labels: ["auth", "bug"] });
+    expect(draft("102")).toMatchObject({
+      statusId: "s-done",
+      priority: 1,
+      labels: ["auth", "bug"],
+    });
     expect(draft("103").dueDate).toBe("2026-12-01");
     expect(plan.teams.find((team) => team.team === "Growth")!.projects).toEqual([
       { externalId: "epic:501", name: "Onboarding" },

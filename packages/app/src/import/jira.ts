@@ -52,7 +52,14 @@ const PRIORITIES: Record<string, Priority> = {
 };
 
 /** Resolutions that mean "finished", as opposed to "closed without doing it". */
-const DONE_RESOLUTIONS = new Set(["done", "fixed", "resolved", "complete", "completed", "unresolved"]);
+const DONE_RESOLUTIONS = new Set([
+  "done",
+  "fixed",
+  "resolved",
+  "complete",
+  "completed",
+  "unresolved",
+]);
 
 const STATUS_CATEGORY: Record<string, StatusHint> = {
   "to do": "todo",
@@ -163,7 +170,8 @@ export function splitJiraComment(value: string): { date: string; author: string;
 }
 
 /** Atlassian account ids look like "712020:5b10…" or 24 hex digits; Server usernames are readable. */
-const looksLikeAccountId = (id: string) => /^\d+:[0-9a-f-]{8,}$/i.test(id) || /^[0-9a-f]{24}$/i.test(id);
+const looksLikeAccountId = (id: string) =>
+  /^\d+:[0-9a-f-]{8,}$/i.test(id) || /^[0-9a-f]{24}$/i.test(id);
 
 function parseFile(file: SourceFile, many: boolean, names: Map<string, string>) {
   const { headers, rows } = parseCsvGrid(file.text);
@@ -206,7 +214,15 @@ function parseFile(file: SourceFile, many: boolean, names: Map<string, string>) 
   };
 
   const problems: string[] = [];
-  const issues: (JiraIssue & { raw: { parent: string; parentKey: string; parentSummary: string; epicLink: string; comments: RawComment[] } })[] = [];
+  const issues: (JiraIssue & {
+    raw: {
+      parent: string;
+      parentKey: string;
+      parentSummary: string;
+      epicLink: string;
+      comments: RawComment[];
+    };
+  })[] = [];
   const seen = new Set<string>();
   const linkColumns = headers
     .map((header) => ({ header, label: linkLabel(header) }))
@@ -217,7 +233,9 @@ function parseFile(file: SourceFile, many: boolean, names: Map<string, string>) 
     const key = c.get(row, "Issue key").toUpperCase();
     const match = KEY.exec(key);
     if (!match) {
-      problems.push(`${rowName(line, file.name, many)} has no issue key like ENG-12, so it's left out.`);
+      problems.push(
+        `${rowName(line, file.name, many)} has no issue key like ENG-12, so it's left out.`,
+      );
       return;
     }
     const externalId = c.get(row, "Issue id") || key;
@@ -231,7 +249,9 @@ function parseFile(file: SourceFile, many: boolean, names: Map<string, string>) 
     const status = c.get(row, "Status") || "To Do";
     const resolution = c.get(row, "Resolution");
     const statusName =
-      resolution && !DONE_RESOLUTIONS.has(nameKey(resolution)) ? `${status} · ${resolution}` : status;
+      resolution && !DONE_RESOLUTIONS.has(nameKey(resolution))
+        ? `${status} · ${resolution}`
+        : status;
     const priorityName = c.get(row, "Priority");
     const created = when(row, "Created", key);
     const resolved = when(row, "Resolved", key);
@@ -241,7 +261,10 @@ function parseFile(file: SourceFile, many: boolean, names: Map<string, string>) 
 
     const extras: SourceIssue["extras"] = [];
     const add = (field: string, label: string, values: string[]) => {
-      const value = values.map((item) => oneLine(item)).filter(Boolean).join(", ");
+      const value = values
+        .map((item) => oneLine(item))
+        .filter(Boolean)
+        .join(", ");
       if (value) extras.push({ field, label, value });
     };
     add("sprint", c.all(row, "Sprint").length > 1 ? "Sprints" : "Sprint", c.all(row, "Sprint"));
@@ -249,7 +272,10 @@ function parseFile(file: SourceFile, many: boolean, names: Map<string, string>) 
       c.get(row, "Custom field (Story point estimate)", "Custom field (Story Points)"),
     ]);
     add("versions", "Components", [...c.all(row, "Component/s"), ...c.all(row, "Components")]);
-    add("versions", "Fix versions", [...c.all(row, "Fix Version/s"), ...c.all(row, "Fix versions")]);
+    add("versions", "Fix versions", [
+      ...c.all(row, "Fix Version/s"),
+      ...c.all(row, "Fix versions"),
+    ]);
     add("versions", "Affects versions", [
       ...c.all(row, "Affects Version/s"),
       ...c.all(row, "Affects versions"),
@@ -384,12 +410,12 @@ export function parseJiraCsv(
     const mentions = (id: string) => person(id);
     issue.description = jiraToMarkdown(issue.description, mentions);
     issue.comments = raw.comments
-        .filter((comment) => comment.body)
-        .map((comment) => ({
-          author: person(comment.authorId) ?? "A Jira user",
-          ...(comment.date !== undefined ? { date: comment.date } : {}),
-          body: jiraToMarkdown(comment.body, mentions),
-        }));
+      .filter((comment) => comment.body)
+      .map((comment) => ({
+        author: person(comment.authorId) ?? "A Jira user",
+        ...(comment.date !== undefined ? { date: comment.date } : {}),
+        body: jiraToMarkdown(comment.body, mentions),
+      }));
   }
   const kept = settings.epicsAsProjects ? issues.filter((issue) => !issue.isEpic) : issues;
   // A sub-task is a sub-issue in Pantry already; "Subtask" as a label would only repeat it.
@@ -411,6 +437,8 @@ export const jira: Adapter = {
   multiFile: true,
   howToExport:
     "In Jira: Filters → Search work items, search for the issues (e.g. project = ENG), then Export → Export CSV (all fields).",
+  exportNote:
+    "Jira stops each CSV export at a limit (1,000 issues on the older export, 10,000 on the current one). For more, export in batches with JQL, for example created < 2026-01-01 and then created >= 2026-01-01, and add every file. Use “all fields” so comments come along.",
   teamTitle: "Jira projects",
   teamHint: "Each Jira project goes into a space.",
   foldFields: JIRA_FOLD_FIELDS,
