@@ -1,0 +1,5 @@
+Task ID,Task Name,Task Content,Status,Priority,Assignees,Tags,Due Date,Date Created,Parent ID,Space Name,Time Estimate
+86c0a1,Set up the newsletter,Pick a tool and import the list.,in progress,high,"[ana@example.com, bo@example.com]",[newsletter],11/28/2026,10/01/2026,,Marketing,2h
+86c0a2,Import the subscriber list,,to do,normal,[bo@example.com],,12/02/2026,10/02/2026,86c0a1,Marketing,
+86c0a3,Write issue #1,Short and friendly.,complete,low,[],"[newsletter, copy]",,10/03/2026,,Marketing,
+86c0a4,Fix the footer links,,to do,urgent,[kris@example.com],[bug],13/15/2026,10/04/2026,,Website,

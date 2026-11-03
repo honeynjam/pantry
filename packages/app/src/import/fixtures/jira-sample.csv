@@ -1,0 +1,25 @@
+Summary,Issue key,Issue id,Issue Type,Status,Project key,Project name,Project type,Project lead,Project lead id,Project description,Priority,Resolution,Assignee,Assignee Id,Reporter,Reporter Id,Creator,Creator Id,Created,Updated,Last Viewed,Resolved,Due date,Votes,Labels,Labels,Labels,Description,Environment,Watchers,Watchers,Watchers Id,Watchers Id,Original estimate,Remaining Estimate,Time Spent,Work Ratio,Σ Original Estimate,Σ Remaining Estimate,Σ Time Spent,Security Level,Inward issue link (Blocks),Outward issue link (Blocks),Inward issue link (Relates),Attachment,Custom field (Development),Custom field (Issue color),Custom field (Rank),Sprint,Sprint,Custom field (Start date),Custom field (Story point estimate),Custom field (Team),Comment,Comment,Comment,Parent,Parent key,Parent summary,Status category,Status category changed
+Checkout redesign,WEB-1,10001,Epic,In Progress,WEB,Web Shop,software,Kris,712020:0a1b2c3d-3333-4aaa-8bbb-000000000003,,High,,,,Kris,712020:0a1b2c3d-3333-4aaa-8bbb-000000000003,Kris,712020:0a1b2c3d-3333-4aaa-8bbb-000000000003,02/Sep/26 9:05 AM,02/Sep/26 9:05 AM,,,,0,checkout,,,"h2. Goal
+A one-page checkout.
+
+* fewer steps
+* guest checkout",,,,,,,,,,,,,,,,,,,,0|i000001:,,,,,,,,,,,,In Progress,
+Card form validation,WEB-2,10002,Story,In Review,WEB,Web Shop,software,Kris,712020:0a1b2c3d-3333-4aaa-8bbb-000000000003,,High,,Ana Moreno,712020:0a1b2c3d-1111-4aaa-8bbb-000000000001,Ana Moreno,712020:0a1b2c3d-1111-4aaa-8bbb-000000000001,Ana Moreno,712020:0a1b2c3d-1111-4aaa-8bbb-000000000001,03/Sep/26 10:15 AM,03/Sep/26 10:15 AM,,,30/Nov/26,0,checkout,frontend,,"When a card number is wrong, say *which* digit group.
+
+{code:js}
+validate(card);
+{code}
+
+See [the spec|https://example.com/spec] and ask [~accountid:712020:0a1b2c3d-2222-4aaa-8bbb-000000000002].",,Ana Moreno,Bo Lindqvist,712020:0a1b2c3d-1111-4aaa-8bbb-000000000001,712020:0a1b2c3d-2222-4aaa-8bbb-000000000002,,,,,,,,,WEB-4,,,,,,0|i000002:,WEB Sprint 4,WEB Sprint 5,01/Sep/26 12:00 AM,5,,"04/Sep/26 2:30 PM;712020:0a1b2c3d-2222-4aaa-8bbb-000000000002;Looks good; one thing:
+the error text is cut off on mobile.","05/Sep/26 9:00 AM;712020:0a1b2c3d-1111-4aaa-8bbb-000000000001;Fixed in the next build, thanks [~accountid:712020:0a1b2c3d-2222-4aaa-8bbb-000000000002].",,10001,WEB-1,Checkout redesign,In Progress,
+Write error messages,WEB-3,10003,Subtask,Done,WEB,Web Shop,software,Kris,712020:0a1b2c3d-3333-4aaa-8bbb-000000000003,,Low,Done,Bo Lindqvist,712020:0a1b2c3d-2222-4aaa-8bbb-000000000002,Ana Moreno,712020:0a1b2c3d-1111-4aaa-8bbb-000000000001,Ana Moreno,712020:0a1b2c3d-1111-4aaa-8bbb-000000000001,03/Sep/26 11:40 AM,03/Sep/26 11:40 AM,,06/Sep/26 4:45 PM,,0,,,,,,,,,,,,,,,,,,,,,,,,0|i000003:,,,,,,,,,10002,WEB-2,Card form validation,Done,
+Payment provider timeout,WEB-4,10004,Bug,Done,WEB,Web Shop,software,Kris,712020:0a1b2c3d-3333-4aaa-8bbb-000000000003,,Highest,Won't Do,Cy Okafor,5f0c8a7e9d1b2c3d4e5f6a7b,Bo Lindqvist,712020:0a1b2c3d-2222-4aaa-8bbb-000000000002,Bo Lindqvist,712020:0a1b2c3d-2222-4aaa-8bbb-000000000002,10/Sep/26 8:00 AM,10/Sep/26 8:00 AM,,12/Sep/26 6:10 PM,,0,payments,,,"Steps:
+# Pay with a test card
+# Wait 30s
+
+{noformat}
+Error: upstream timed out
+{noformat}",,,,,,,,,,,,,,,WEB-2,OPS-7,10/Sep/26 8:01 AM;712020:0a1b2c3d-2222-4aaa-8bbb-000000000002;trace.txt;https://example.atlassian.net/rest/api/3/attachment/content/20001,,,0|i000004:,,,,,,10/Sep/26 8:30 AM;5f0c8a7e9d1b2c3d4e5f6a7b;Can't reproduce on staging.,,,10001,WEB-1,Checkout redesign,Done,
+Order history page,WEB-5,10005,Story,To Do,WEB,Web Shop,software,Kris,712020:0a1b2c3d-3333-4aaa-8bbb-000000000003,,Lowest,,,,Ana Moreno,712020:0a1b2c3d-1111-4aaa-8bbb-000000000001,Ana Moreno,712020:0a1b2c3d-1111-4aaa-8bbb-000000000001,15/Sep/26 1:20 PM,15/Sep/26 1:20 PM,,,someday,0,,,,,,,,,,,,,,,,,,,,,,,,0|i000005:,,,,,,,,,10009,WEB-9,Accounts revamp,To Do,
+Rotate the on-call schedule,OPS-7,10107,Task,Selected for Development,OPS,Ops Desk,software,Kris,712020:0a1b2c3d-3333-4aaa-8bbb-000000000003,,Medium,,Kris,712020:0a1b2c3d-3333-4aaa-8bbb-000000000003,Cy Okafor,5f0c8a7e9d1b2c3d4e5f6a7b,Cy Okafor,5f0c8a7e9d1b2c3d4e5f6a7b,20/Oct/26 7:05 PM,20/Oct/26 7:05 PM,,,,0,oncall,,,,,,,,,,,,,,,,,,,,,,,0|i000007:,,,,,,,,,,,,To Do,
+Archive old logs,OPS-8,10108,Task,Backlog,OPS,Ops Desk,software,Kris,712020:0a1b2c3d-3333-4aaa-8bbb-000000000003,,,,,,,,,,21/Oct/26 7:05 PM,21/Oct/26 7:05 PM,,,,0,,,,,,,,,,,,,,,,,,,,,,,,0|i000008:,,,,,,,,,,,,To Do,

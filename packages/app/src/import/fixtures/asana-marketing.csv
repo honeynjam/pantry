@@ -1,0 +1,5 @@
+﻿Task ID,Created At,Completed At,Last Modified,Name,Section/Column,Assignee,Assignee Email,Start Date,Due Date,Tags,Notes,Projects,Parent task,Blocked By (Dependencies),Blocking (Dependencies),Priority,Estimated time,Stage
+1209000000000002,2026-09-02,,2026-10-03,Write the announcement,Doing,Bo Lindqvist,bo@example.com,,2026-11-18,copy,,"Website relaunch,Marketing",,Plan the launch,,Medium,,Drafting
+1209000000000010,2026-09-10,,2026-10-10,Social posts,Next up,Ana Moreno,ana@example.com,,2026-11-21,social,"Three posts, one a day.",Marketing,,,,Low,1:30,
+1209000000000011,2026-09-11,,2026-10-11,Review,Next up,,,,,,,Marketing,,,,,,
+1209000000000012,2026-09-12,,2026-10-12,Proofread posts,,,,,,,,,Review,,,,,

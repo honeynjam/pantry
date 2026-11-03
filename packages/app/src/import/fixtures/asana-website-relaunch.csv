@@ -1,0 +1,10 @@
+﻿Task ID,Created At,Completed At,Last Modified,Name,Section/Column,Assignee,Assignee Email,Start Date,Due Date,Tags,Notes,Projects,Parent task,Blocked By (Dependencies),Blocking (Dependencies),Priority,Estimated time,Stage
+1209000000000001,2026-09-01,,2026-10-02,Plan the launch,To do,Ana Moreno,ana@example.com,2026-09-05,2026-11-20,"launch,planning","Who does what on launch day.
+One line per person.",Website relaunch,,,Write the announcement,High,2:00,Planning
+1209000000000002,2026-09-02,,2026-10-03,Write the announcement,Doing,Bo Lindqvist,bo@example.com,,2026-11-18,copy,,"Website relaunch,Marketing",,Plan the launch,,Medium,,Drafting
+1209000000000003,2026-09-03,2026-09-20,2026-09-20,Pick a hosting plan,Done,Kris,kris@example.com,,,,,Website relaunch,,,,Low,,
+1209000000000004,2026-09-04,,2026-10-04,Book the photographer,,,,,,,,,Plan the launch,,,,,
+1209000000000005,2026-09-04,2026-09-30,2026-09-30,Draft the email,,Bo Lindqvist,bo@example.com,,,,,,Write the announcement,,,,,
+1209000000000006,2026-09-05,,2026-10-05,Review,To do,,,,,,,Website relaunch,,,,,,
+1209000000000007,2026-09-06,,2026-10-06,Check the copy,,,,,,,,,Review,,,,,
+1209000000000008,2026-09-07,,2026-10-07,Review,Doing,,,,,,"Second review, for legal.",Website relaunch,,,,,,
