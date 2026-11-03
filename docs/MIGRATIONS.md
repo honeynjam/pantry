@@ -10,7 +10,19 @@ the new schema when functions are pushed, and refuses the push if any row doesn'
 3. **Narrow** (release N+1 or later): the schema accepts only the new shape. Shipped only when every
    instance has run step 2, and guarded so it can't be deployed onto unmigrated data.
 
-## Import and Export (unreleased): additive only, no migration
+## More importers (0.1.32, unreleased): additive only, no migration
+
+Two wider unions. `importLinks.source` (and so `importSource`) also accepts `"asana"`, `"shortcut"`, `"jira"` and
+`"csv"`, next to `"linear"`; every link 0.1.31 wrote keeps `source: "linear"` and the same `externalId`, so a
+re-import of a Linear file still finds what it made. `comments.via` also accepts `"import"`, for comments a Jira
+import brings over. Existing rows fit the new schema as they are, so `convex deploy` succeeds on any instance and
+`migrations:run` has nothing to do. Nothing will be narrowed: older rows simply never say "import".
+
+The 0.1.31 functions `imports.linearContext`, `imports.prepareLinear` and `imports.importLinearIssues` stay, as
+`imports.context`, `imports.prepare` and `imports.importIssues` with `source: "linear"`, so an app from 0.1.31 keeps
+working against a newer backend.
+
+## Import and Export (0.1.31): additive only, no migration
 
 One new table, `importLinks` (what an import made from which Linear id, so a re-import skips it), and one wider
 union: `activity.via` also accepts `"import"` (the `created` row of an imported issue). `comments.via` is

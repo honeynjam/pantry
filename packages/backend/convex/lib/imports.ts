@@ -2,6 +2,7 @@ import type { Infer } from "convex/values";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { logImportActivity } from "./activity";
+import { MAX_COMMENT } from "./comments";
 import { fail } from "./errors";
 import {
   checkDescription,
@@ -36,7 +37,18 @@ export const MAX_PROJECTS = 500;
 export const MAX_LABELS = 500;
 
 /** What the source is called in the timeline ("imported the issue from Linear"). */
-export const SOURCE_NAME: Record<ImportSource, string> = { linear: "Linear" };
+export const SOURCE_NAME: Record<ImportSource, string> = {
+  linear: "Linear",
+  asana: "Asana",
+  shortcut: "Shortcut",
+  jira: "Jira",
+  csv: "a CSV file",
+};
+
+/** Comments one imported issue may bring (Jira's), each at most MAX_COMMENT characters. */
+export const MAX_COMMENTS_PER_ISSUE = 100;
+/** Comments one batch may bring: each is a write in the batch's transaction. */
+export const MAX_COMMENTS_PER_BATCH = 1_000;
 
 // ---------------------------------------------------------------------------------------------
 // Links: source id → what the import made
@@ -124,9 +136,9 @@ export function clip(value: string, max: number): string {
 // ---------------------------------------------------------------------------------------------
 
 export type TeamPlan = {
-  /** The source's name for the team ("Engineering"); its link is `team:<name>`. */
+  /** The source's name for the team (a Linear team, a Jira project…); its link is `team:<name>`. */
   team: string;
-  /** The team's issue prefix in the source ("ENG" for ENG-12). */
+  /** The team's issue prefix in the source ("ENG" for ENG-12), or "" when it has none. */
   prefix: string;
   /** The highest issue number of the team in the file (archived included). */
   maxNumber: number;
@@ -188,7 +200,7 @@ export async function prepareImport(
     await saveLink(ctx, workspaceId, source, teamId, space!._id);
     space = space!;
 
-    const keepsNumbers = space.key === team.prefix.toUpperCase();
+    const keepsNumbers = team.prefix !== "" && space.key === team.prefix.toUpperCase();
     if (keepsNumbers && space.nextIssueNumber <= team.maxNumber) {
       await ctx.db.patch("spaces", space._id, { nextIssueNumber: team.maxNumber + 1 });
     }
@@ -257,9 +269,12 @@ export async function prepareImport(
 // ---------------------------------------------------------------------------------------------
 
 export type ImportIssueInput = {
-  /** The source's stable id for the issue (Linear's UUID). */
+  /** The source's stable id for the issue (Linear's UUID, Jira's issue id, Asana's task id…). */
   externalId: string;
-  /** The issue's key in the source ("ENG-12"): kept as the Pantry key when the space's key matches. */
+  /**
+   * The issue's key in the source ("ENG-12"): kept as the Pantry key when the space's key matches.
+   * Empty for sources without keys (Asana, Shortcut).
+   */
   sourceKey: string;
   spaceId: Id<"spaces">;
   projectId?: Id<"projects">;
@@ -275,6 +290,11 @@ export type ImportIssueInput = {
   dueDate?: string;
   /** When it was done or canceled in the source (only kept for done and canceled statuses). */
   completedAt?: number;
+  /**
+   * The source's comments, oldest first, each already saying who wrote it there and when. They're
+   * written under the importer's name, tagged "via import", and only when the issue is created.
+   */
+  comments?: string[];
 };
 
 export type ImportIssueResult = {
@@ -326,7 +346,8 @@ async function checkMember(
  * One issue from the source, or a skip when an earlier import already made it. Same rules as
  * `createIssue` (title, description, due date, project of the space, sub-issues one level deep in
  * the parent's space and project, top of its column), plus the source's number when the key is free,
- * the matched creator, the source's completion time and one `created` row "via import".
+ * the matched creator, the source's completion time, its comments (tagged "via import", without
+ * an activity row each) and one `created` row "via import".
  */
 export async function importIssue(
   ctx: MutationCtx,
@@ -359,6 +380,12 @@ export async function importIssue(
     const label = await ctx.db.get("labels", labelId);
     if (!label || label.workspaceId !== workspaceId) fail("NOT_FOUND", "Label not found.");
   }
+
+  const comments = (input.comments ?? []).filter((body) => body.trim());
+  if (comments.length > MAX_COMMENTS_PER_ISSUE)
+    fail("TOO_MANY", `An imported issue can bring at most ${MAX_COMMENTS_PER_ISSUE} comments.`);
+  if (comments.some((body) => body.length > MAX_COMMENT))
+    fail("TOO_LONG", `Comments can be at most ${MAX_COMMENT.toLocaleString("en")} characters.`);
 
   const kept = await keptNumber(ctx, space, input.sourceKey);
   const number = kept.number ?? space.nextIssueNumber;
@@ -401,6 +428,8 @@ export async function importIssue(
     SOURCE_NAME[source],
     status.name,
   );
+  for (const body of comments)
+    await ctx.db.insert("comments", { issueId, authorId: importer._id, body, via: "import" });
   await saveLink(ctx, workspaceId, source, input.externalId, issueId);
   return {
     externalId: input.externalId,

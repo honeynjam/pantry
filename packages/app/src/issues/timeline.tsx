@@ -285,6 +285,7 @@ function CommentItem({ comment, lookups }: { comment: Comment; lookups: Lookups 
         />
         <span className="text-foreground font-medium">{author?.displayName ?? "Someone"}</span>
         {comment.via === "mcp" && <ViaMcp />}
+        {comment.via === "import" && <ViaImport />}
         <time
           dateTime={new Date(comment._creationTime).toISOString()}
           title={fullDate(comment._creationTime)}

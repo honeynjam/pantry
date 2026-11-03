@@ -3,10 +3,19 @@ import { v } from "convex/values";
 import { avatarValidator } from "./lib/avatar";
 
 export const via = v.union(v.literal("app"), v.literal("mcp"));
-/** Activity rows can also come from an import (Settings → Import and Export), never comments. */
+/**
+ * Activity rows and comments can also come from an import (Settings → Import and Export): the
+ * `created` row of an imported issue, and comments brought over from the source (Jira).
+ */
 export const activityVia = v.union(v.literal("app"), v.literal("mcp"), v.literal("import"));
-/** Where imported rows came from. Only Linear (CSV export) so far. */
-export const importSource = v.literal("linear");
+/** Where imported rows came from: the CSV export of each source, or any other CSV ("csv"). */
+export const importSource = v.union(
+  v.literal("linear"),
+  v.literal("asana"),
+  v.literal("shortcut"),
+  v.literal("jira"),
+  v.literal("csv"),
+);
 export const category = v.union(
   v.literal("backlog"),
   v.literal("unstarted"),
@@ -171,7 +180,7 @@ export default defineSchema({
     issueId: v.id("issues"),
     authorId: v.id("members"),
     body: v.string(),
-    via,
+    via: activityVia,
     editedAt: v.optional(v.number()),
   }).index("by_issue", ["issueId"]),
 

@@ -517,6 +517,120 @@ describe("imports.linearContext", () => {
   });
 });
 
+describe("imports from other sources (Asana, Shortcut, Jira, other CSV)", () => {
+  it("are owner only too", async () => {
+    const { t, workspaceId } = await setUp();
+    await addPartner(t, workspaceId);
+    const member = t.withIdentity(partner);
+    await expect(
+      member.mutation(api.imports.prepare, { source: "jira", teams: [team()], labels: [] }),
+    ).rejects.toThrow(/owner/i);
+    await expect(
+      member.query(api.imports.context, { source: "asana", teams: [], emails: [], externalIds: [] }),
+    ).rejects.toThrow(/owner/i);
+    await expect(
+      t.withIdentity(outsider).mutation(api.imports.importIssues, { source: "shortcut", issues: [] }),
+    ).rejects.toThrow();
+  });
+
+  it("keep each source's links apart: the same id from Jira and Linear are two issues", async () => {
+    const { t, as, status } = await setUp();
+    const jira = await as.mutation(api.imports.prepare, {
+      source: "jira",
+      teams: [{ ...team(), team: "Web Shop", prefix: "WEB", maxNumber: 4, projects: [], target: { name: "Web", key: "WEB" } }],
+      labels: [],
+    });
+    const web = jira.teams[0]!.spaceId;
+    const one = issue({ externalId: "10001", sourceKey: "WEB-1", spaceId: web, statusId: status("Todo") });
+    const [first] = await as.mutation(api.imports.importIssues, { source: "jira", issues: [one] });
+    expect(first).toMatchObject({ key: "WEB-1", outcome: "created" });
+    const [again] = await as.mutation(api.imports.importIssues, { source: "jira", issues: [one] });
+    expect(again).toMatchObject({ key: "WEB-1", outcome: "skipped" });
+    // Linear's link for "10001" is a different link: it creates (with the next free number).
+    const [linear] = await as.mutation(api.imports.importLinearIssues, { issues: [one] });
+    expect(linear).toMatchObject({ key: "WEB-5", outcome: "created", renumbered: true });
+    // The space Jira made is found again for Jira, not for Linear.
+    const context = await as.query(api.imports.context, {
+      source: "jira",
+      teams: ["Web Shop"],
+      emails: [],
+      externalIds: ["10001"],
+    });
+    expect(context).toMatchObject({ teams: { "Web Shop": { spaceId: web } }, imported: { "10001": "WEB-1" } });
+    const other = await as.query(api.imports.context, {
+      source: "asana",
+      teams: ["Web Shop"],
+      emails: [],
+      externalIds: ["10001"],
+    });
+    expect(other).toMatchObject({ teams: { "Web Shop": null }, imported: {} });
+    const activity = await t.run((ctx) => ctx.db.query("activity").collect());
+    expect(activity.map((row) => row.from).sort()).toEqual(["Jira", "Linear"]);
+  });
+
+  it("numbers issues without keys from the space's counter", async () => {
+    const { as, status } = await setUp();
+    const prepared = await as.mutation(api.imports.prepare, {
+      source: "asana",
+      teams: [{ team: "Website", prefix: "", maxNumber: 0, projects: [], target: { name: "Website", key: "WR" } }],
+      labels: [],
+    });
+    const spaceId = prepared.teams[0]!.spaceId;
+    expect(prepared.teams[0]!.keepsNumbers).toBe(false);
+    const results = await as.mutation(api.imports.importIssues, {
+      source: "asana",
+      issues: ["1209000000000001", "1209000000000002"].map((externalId) =>
+        issue({ externalId, sourceKey: "", spaceId, statusId: status("Todo") }),
+      ),
+    });
+    expect(results.map((row) => row.key)).toEqual(["WR-1", "WR-2"]);
+  });
+
+  it("brings comments in under the importer's name, tagged via import, only when the issue is created", async () => {
+    const { t, as, status, memberId } = await setUp();
+    const prepared = await as.mutation(api.imports.prepare, {
+      source: "jira",
+      teams: [{ ...team(), projects: [] }],
+      labels: [],
+    });
+    const spaceId = prepared.teams[0]!.spaceId;
+    const withComments = {
+      ...issue({ externalId: "10002", sourceKey: "ACME-2", spaceId, statusId: status("Todo") }),
+      comments: ["*Bo in Jira on 2026-09-04:*\n\nLooks good.", "   ", "*Ana in Jira:*\n\nFixed."],
+    };
+    await as.mutation(api.imports.importIssues, { source: "jira", issues: [withComments] });
+    await as.mutation(api.imports.importIssues, { source: "jira", issues: [withComments] });
+    const comments = await t.run((ctx) => ctx.db.query("comments").collect());
+    expect(comments.map((row) => row.body)).toEqual([
+      "*Bo in Jira on 2026-09-04:*\n\nLooks good.",
+      "*Ana in Jira:*\n\nFixed.",
+    ]);
+    expect(comments.every((row) => row.via === "import" && row.authorId === memberId)).toBe(true);
+    // One activity row for the import, not one per comment.
+    const activity = await t.run((ctx) => ctx.db.query("activity").collect());
+    expect(activity).toHaveLength(1);
+
+    const tooMany = {
+      ...issue({ externalId: "10003", sourceKey: "ACME-3", spaceId, statusId: status("Todo") }),
+      comments: Array.from({ length: 101 }, (_, index) => `Comment ${index}`),
+    };
+    await expect(
+      as.mutation(api.imports.importIssues, { source: "jira", issues: [tooMany] }),
+    ).rejects.toThrow(/at most 100 comments/);
+    const tooLong = { ...tooMany, comments: ["x".repeat(20_001)] };
+    await expect(
+      as.mutation(api.imports.importIssues, { source: "jira", issues: [tooLong] }),
+    ).rejects.toThrow(/at most 20,000 characters/);
+    const batch = Array.from({ length: 11 }, (_, index) => ({
+      ...issue({ externalId: `b${index}`, sourceKey: "", spaceId, statusId: status("Todo") }),
+      comments: Array.from({ length: 100 }, () => "c"),
+    }));
+    await expect(as.mutation(api.imports.importIssues, { source: "jira", issues: batch })).rejects.toThrow(
+      /at most 1000 comments per batch/,
+    );
+  });
+});
+
 describe("exports", () => {
   it("lets any member export the workspace, issues with comments and activity, page by page", async () => {
     const { t, as, workspaceId, spaceId } = await setUp();
