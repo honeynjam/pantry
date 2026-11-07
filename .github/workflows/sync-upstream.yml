@@ -1,5 +1,5 @@
 # Keeps a self-hosted Pantry up to date (spec §10). Your repo is a copy of honeynjam/pantry: Vercel's
-# Deploy button clones it, so it isn't a GitHub fork and has no "Sync fork" button. Once a week, or when
+# Deploy button clones it, so it isn't a GitHub fork and has no "Sync fork" button. Once a day, or when
 # you run it from the Actions tab, this workflow opens a pull request in your repo that updates it to the
 # latest Pantry release. Merging the PR is what redeploys your app.
 #
@@ -23,7 +23,7 @@ on:
         type: boolean
         default: false
   schedule:
-    - cron: "23 7 * * 1" # Mondays 07:23 UTC
+    - cron: "23 7 * * *" # every day at 07:23 UTC
 
 permissions:
   contents: write
@@ -278,7 +278,7 @@ jobs:
 
           [ "$auto_merge" = true ] || exit 0
 
-          # Comments once per reason (a hidden marker), so weekly re-runs don't repeat themselves.
+          # Comments once per reason (a hidden marker), so daily re-runs don't repeat themselves.
           comment_once() {
             if gh pr view "$pr" --repo "$GITHUB_REPOSITORY" --json comments --jq '.comments[].body' \
               | grep -qF "<!-- pantry-sync:$1 -->"; then

@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- **Sync upstream checks for a new release every day** instead of every Monday, so an update PR opens (and, with
+  `SYNC_AUTO_MERGE=true`, merges) within a day of a release. When there is nothing new, the run finishes in seconds
+  and changes nothing. You get this once you merge this update.
+
 ## [0.1.33] - 2026-11-07
 
 ### Added

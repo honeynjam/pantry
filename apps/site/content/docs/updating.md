@@ -1,5 +1,5 @@
 The Deploy button copies Pantry into your account rather than forking it, so GitHub has no "Sync fork" button for
-it. Your copy includes a **Sync upstream** workflow instead. Every Monday, or whenever you run it, it opens a pull
+it. Your copy includes a **Sync upstream** workflow instead. Every day, or whenever you run it, it opens a pull
 request in your repo that updates it to the latest Pantry release. **Merging the PR deploys the update.** Nothing
 changes until you merge, unless you turn on [automatic updates](#automatic-updates-opt-in). To skip a release,
 close its PR; it won't reopen.
@@ -35,7 +35,7 @@ close its PR; it won't reopen.
 ## Automatic updates (opt-in)
 
 Turn this on and ordinary updates merge, and so deploy, by themselves once CI has passed on them. It works on any
-GitHub plan, including private repos on GitHub Free. Sync upstream still opens the PR every Monday. It **never**
+GitHub plan, including private repos on GitHub Free. Sync upstream still opens the PR the day a release comes out. It **never**
 merges by itself:
 
 - the first update of your copy (it replaces files wholesale; review that one PR yourself);

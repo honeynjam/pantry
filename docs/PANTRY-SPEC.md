@@ -340,7 +340,7 @@ Goal: a fresh instance in **about 5 minutes, under 10** including creating Verce
 
 **Updates and redeploys (self-hosters):**
 - Every push to the user's copy redeploys web + Convex functions together (Convex Vercel guide). A Vercel rollback to an older deployment doesn't rerun the build, so Convex keeps the newer functions: keep schema and function changes backward compatible (widen first, narrow later), or roll back by reverting the commit.
-- Pulling upstream: since the clone isn't a GitHub fork, GitHub's "Sync fork" isn't available. The repo ships a `sync-upstream` GitHub Action (manual or weekly) that opens a PR in the user's own repo from the latest Pantry release tag; merging it redeploys. (This is repo maintenance for self-hosters, not a product GitHub integration.) Users who prefer can fork first and import the fork into Vercel instead.
+- Pulling upstream: since the clone isn't a GitHub fork, GitHub's "Sync fork" isn't available. The repo ships a `sync-upstream` GitHub Action (manual or daily) that opens a PR in the user's own repo from the latest Pantry release tag; merging it redeploys. (This is repo maintenance for self-hosters, not a product GitHub integration.) Users who prefer can fork first and import the fork into Vercel instead.
 - The Mac app updates itself from Pantry's GitHub Releases (Tauri updater), independent of the server.
 
 **What costs nothing** (personal, small team):
@@ -726,7 +726,7 @@ README updated if setup changed.
 4. **Issues backend:** `issues.create/update/move/remove/get/listBySpace/listMine` (`listBySpace` was `listByProject`), activity rows, `sortOrder` rules. Done: tests for numbering under repeated creates, one activity row per changed field, `completedAt` set/cleared by category, column renumbering below the `1e-9` gap, sub-issue depth limit.
 5. **List view + issue detail:** grouped list by status, issue page (title, description and comments in `MarkdownEditor`, properties, sub-issues, activity). Done: create/edit/comment flows work in two browsers with live updates; a markdown fixture set round-trips through the editor unchanged.
 6. **Board view:** columns per status with drag to `issues.move` (`@dnd-kit/core` 6.x, card drop on the motion tokens). Done: drag within and across columns persists order after reload and shows live in the second browser.
-7. **`sync-upstream` Action** (§10): manual + weekly workflow that opens a PR from the latest release tag. Done: dry run against a test clone opens the PR; no auto-merge.
+7. **`sync-upstream` Action** (§10): manual + daily workflow that opens a PR from the latest release tag. Done: dry run against a test clone opens the PR; no auto-merge.
 
 ### M3 tasks
 Checked 26 Oct 2026: [tinykeys](https://www.npmjs.com/package/tinykeys) 4.0.1 README (sequences like `"g i"`, each press within 1000 ms, `$mod`, ignores `input`/`textarea`/`select`/`[contenteditable]` by default) and Convex's [optimistic updates](https://docs.convex.dev/client/react/optimistic-updates) docs (`useMutation(...).withOptimisticUpdate((localStore, args) => …)` with `getQuery`/`setQuery`; rolled back when the mutation completes; mutating objects in place corrupts client state).

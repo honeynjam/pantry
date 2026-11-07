@@ -92,7 +92,7 @@ needsSecret }`; it's the quickest health check.
 ### Updating your instance
 
 The Deploy button copies this repo into your account; it doesn't fork it, so GitHub has no "Sync fork" button for
-it. Your copy includes a **Sync upstream** workflow (`.github/workflows/sync-upstream.yml`) for that. Every Monday,
+it. Your copy includes a **Sync upstream** workflow (`.github/workflows/sync-upstream.yml`) for that. Every day,
 or whenever you run it, it opens a pull request in your repo that updates it to the latest Pantry release.
 **Merging the PR deploys the update** (Vercel rebuilds the web app and pushes the new Convex functions). Nothing
 changes until you merge: the workflow never merges by itself unless you turn on
@@ -129,7 +129,7 @@ Good to know:
 #### Automatic updates (opt-in)
 
 Turn this on and ordinary updates merge, and so deploy, by themselves once CI has passed on them. It works on any
-GitHub plan, including private repos on GitHub Free. Sync upstream still opens the PR every Monday. It **never**
+GitHub plan, including private repos on GitHub Free. Sync upstream still opens the PR the day a release comes out. It **never**
 merges by itself:
 
 - the first update of your copy (it replaces files wholesale; review that one PR yourself);

@@ -111,7 +111,7 @@ and never deploys anything.
 
 The workflow checks that the tag matches every version file and that the changelog has a dated section for it,
 runs the CI checks, and creates the GitHub Release with that section as its notes. Self-hosted copies get an
-update PR from their Sync upstream workflow the next Monday, or as soon as their owners run it.
+update PR from their Sync upstream workflow within a day, or as soon as their owners run it.
 
 ### Review before merging
 

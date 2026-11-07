@@ -187,7 +187,11 @@ export const selfHost = {
     { logo: "github", title: "MIT licensed", body: "Read it, fork it, change it." },
     { logo: "convex", title: "Your data", body: "Issues live in your Convex project." },
     { logo: "vercel", title: "Free tiers fit", body: "Hobby and Free plans cover a small team." },
-    { logo: "pr", title: "Updates as PRs", body: "A weekly pull request. Merge when you like." },
+    {
+      logo: "pr",
+      title: "Updates as PRs",
+      body: "A pull request for each release. Merge when you like.",
+    },
   ] as const,
   footnote: "Vercel Hobby is for non-commercial use. Use a Pro plan for paid work.",
 };
