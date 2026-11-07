@@ -147,7 +147,7 @@ export const SHORTCUTS: ReadonlyArray<ShortcutDef> = [
     id: "contextMenu",
     binding: "Shift+F10",
     display: "shift+f10",
-    label: "Open the right-click menu for what's focused",
+    label: "Open the right-click menu",
     group: "General",
     where: everywhere,
   },

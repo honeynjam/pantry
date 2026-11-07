@@ -116,6 +116,12 @@ const collision: CollisionDetection = (args) => {
   return hits.length > 0 ? hits : closestCenter(args);
 };
 
+/**
+ * Scroll only when the card is near an edge (dnd-kit's default starts a fifth of the way in, so the
+ * board slid away while you aimed at a column in the middle).
+ */
+const AUTO_SCROLL = { threshold: { x: 0.08, y: 0.12 } };
+
 // Sensor options live outside the component: useSensor memoises on the options object, and new
 // sensors on every render would change dnd-kit's context and re-render every card.
 /** A few pixels of travel before a drag starts, so clicks still open the issue. */
@@ -429,6 +435,7 @@ function Board({ issues, lookups, space, newIssue, groupBy }: BoardProps) {
     <IssueContextMenu issues={ordered} selected={selected} lookups={lookups} actions={actions}>
       <DndContext
         sensors={sensors}
+        autoScroll={AUTO_SCROLL}
         collisionDetection={collision}
         onDragStart={onDragStart}
         onDragMove={onDragMove}

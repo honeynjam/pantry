@@ -14,6 +14,7 @@ import {
   type DragStartEvent,
   type DropAnimation,
   type KeyboardCoordinateGetter,
+  type Modifier,
   defaultDropAnimationSideEffects,
 } from "@dnd-kit/core";
 import type { Doc, Id } from "@pantry/backend/dataModel";
@@ -93,6 +94,12 @@ const rowCoordinates: KeyboardCoordinateGetter = (event, { currentCoordinates })
   }
   return undefined;
 };
+
+/** Scroll the list only when the row nears its top or bottom edge. */
+const AUTO_SCROLL = { threshold: { x: 0, y: 0.12 } };
+
+/** Rows only move up and down: the lifted row stays in the list's column. */
+const VERTICAL: Modifier[] = [({ transform }) => ({ ...transform, x: 0 })];
 
 // Outside the component: useSensor memoises on the options object.
 /** A few pixels of travel before a drag starts, so a click still opens the issue. */
@@ -185,10 +192,6 @@ export function ListDragAndDrop({
     if (!rect || !root) return null;
     // A keyboard step lands the centre exactly on a neighbour's midpoint: ties go the way it moves.
     const y = rect.top + rect.height / 2 + Math.sign(event.delta.y);
-    // Dropped beside the list (on the sidebar, say): nothing moves.
-    const bounds = root.getBoundingClientRect();
-    const x = rect.left + rect.width / 2;
-    if (x < bounds.left || x > bounds.right) return null;
     const sections = [...root.querySelectorAll<HTMLElement>("[data-drop-group]")];
     if (sections.length === 0) return null;
     // The section under the point, else the nearest one (above the first, below the last).
@@ -339,6 +342,8 @@ export function ListDragAndDrop({
   return (
     <DndContext
       sensors={sensors}
+      modifiers={VERTICAL}
+      autoScroll={AUTO_SCROLL}
       onDragStart={onDragStart}
       onDragMove={onDragMove}
       onDragEnd={onDragEnd}

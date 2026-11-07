@@ -376,12 +376,14 @@ export function AppShell({
     >
       <AppCommandsProvider data={data}>
         <AppSidebar data={data} />
-        <SidebarInset className="min-w-0">
+        {/* Viewport-tall: lists, the board and settings scroll inside, so their sticky headers stay
+            put and a drag near the edge scrolls the list, not the page. */}
+        <SidebarInset className="h-svh min-w-0">
           <header className="border-border flex h-11 shrink-0 items-center gap-2 border-b px-3">
             <SidebarTrigger title="Fold the sidebar ( [ )" aria-keyshortcuts="[" />
             <div className="flex min-w-0 items-center gap-2 text-sm">{title(data)}</div>
           </header>
-          <main className="flex min-h-0 flex-1 flex-col">
+          <main className="flex min-h-0 flex-1 flex-col overflow-y-auto">
             {data.upgrading ? <Upgrading /> : children(data)}
           </main>
         </SidebarInset>
