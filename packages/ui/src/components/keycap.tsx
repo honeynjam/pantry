@@ -67,7 +67,7 @@ export function formatChord(chord: string, isMac: boolean): string[] {
       return (
         (isMac ? MAC_SYMBOLS : OTHER_SYMBOLS)[lower] ??
         NAMED[lower] ??
-        (part.length === 1 ? part.toUpperCase() : part)
+        (part.length === 1 || /^f\d{1,2}$/.test(lower) ? part.toUpperCase() : part)
       );
     });
 }

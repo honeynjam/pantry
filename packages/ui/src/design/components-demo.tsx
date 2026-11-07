@@ -65,6 +65,19 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@pantry/ui/components/dropdown-menu";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuGroup,
+  ContextMenuItem,
+  ContextMenuLabel,
+  ContextMenuSeparator,
+  ContextMenuShortcut,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
+  ContextMenuTrigger,
+} from "@pantry/ui/components/context-menu";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@pantry/ui/components/field";
 import { Input } from "@pantry/ui/components/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@pantry/ui/components/input-group";
@@ -493,6 +506,69 @@ function Overlays() {
   );
 }
 
+/** Right-click menu: the dropdown's parts, opened at the pointer (or Shift+F10 on the focus). */
+function ContextMenuDemo() {
+  const brand = useDesignBrand();
+  const [status, setStatus] = React.useState<StatusCategory>("unstarted");
+  return (
+    <SubSection
+      title="Context menu"
+      hint="right-click, long-press or Shift+F10 · same items as the dropdown"
+    >
+      <Specimen>
+        <ContextMenu>
+          <ContextMenuTrigger
+            tabIndex={0}
+            className="border-border text-muted-foreground focus-visible:outline-ring flex h-24 w-80 items-center justify-center gap-2 rounded-lg border border-dashed text-sm outline-none focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            <StatusGlyph category={status} />
+            <IssueKey value={`${brand.defaultKey}-42`} />
+            Right-click this issue
+          </ContextMenuTrigger>
+          <ContextMenuContent className="w-56">
+            <ContextMenuGroup>
+              <ContextMenuLabel>2 issues</ContextMenuLabel>
+              <ContextMenuSub>
+                <ContextMenuSubTrigger>
+                  <StatusGlyph category={status} />
+                  Status
+                  <ContextMenuShortcut>
+                    <Keycap keys="s" />
+                  </ContextMenuShortcut>
+                </ContextMenuSubTrigger>
+                <ContextMenuSubContent className="w-48">
+                  {STATUS_CATEGORIES.map((category) => (
+                    <ContextMenuItem key={category} onClick={() => setStatus(category)}>
+                      <StatusGlyph category={category} />
+                      {STATUS_CATEGORY_LABEL[category]}
+                    </ContextMenuItem>
+                  ))}
+                </ContextMenuSubContent>
+              </ContextMenuSub>
+              <ContextMenuItem>
+                <PlusIcon />
+                Add sub-issue
+                <ContextMenuShortcut>
+                  <Keycap keys="shift+c" />
+                </ContextMenuShortcut>
+              </ContextMenuItem>
+              <ContextMenuItem>
+                <CopyIcon />
+                Copy link
+              </ContextMenuItem>
+            </ContextMenuGroup>
+            <ContextMenuSeparator />
+            <ContextMenuItem variant="destructive">
+              <TrashIcon />
+              Delete 2 issues…
+            </ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
+      </Specimen>
+    </SubSection>
+  );
+}
+
 function WhenVisible({ children, className }: { children: React.ReactNode; className?: string }) {
   const ref = React.useRef<HTMLDivElement>(null);
   const [visible, setVisible] = React.useState(false);
@@ -796,6 +872,7 @@ export function ComponentsSection() {
       <BadgesAndAvatars />
       <TabsAndToggles />
       <Overlays />
+      <ContextMenuDemo />
       <CommandDemo />
       <Toasts />
       <Keycaps />

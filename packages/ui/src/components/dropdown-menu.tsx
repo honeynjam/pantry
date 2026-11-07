@@ -126,7 +126,8 @@ function DropdownMenuSubTrigger({
       {...props}
     >
       {children}
-      <ChevronRightIcon className="ml-auto" />
+      {/* After a shortcut hint the hint takes the free space and the chevron sits next to it. */}
+      <ChevronRightIcon className="ml-auto [[data-slot=dropdown-menu-shortcut]~&]:ml-1.5" />
     </MenuPrimitive.SubmenuTrigger>
   );
 }
