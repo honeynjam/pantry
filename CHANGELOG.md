@@ -8,6 +8,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **Right-click menus.** Right-click an issue in a list, on the board, in My issues or among an issue's sub-issues to
+  change its status, priority, assignee, labels, project or due date, open it in a new tab, add a sub-issue, copy
+  its link, key or title, or delete it. On a selected issue the menu acts on the whole selection. Spaces and
+  projects in the sidebar get one too (open, new issue, rename, colour, copy link, archive). `Shift+F10` opens it
+  from the keyboard.
+- **Drag and drop in the list.** Drag rows to reorder them or into another group to change status (or project, when
+  grouped by project), with the same order as the board. Selected issues move together; Space and the arrow keys
+  drag from the keyboard, and Esc cancels. In My issues, dragging changes status only.
+
+### Changed
+
+- **The board looks and works more like Linear's.** Compact columns with a count and **+** in the header, quieter
+  cards with property chips, empty columns hidden in a Hidden columns list you can drop onto, multi-select drag, and
+  a placeholder where the dragged card was. On touch screens, hold a card briefly to drag it, so swiping scrolls.
+- **Lists, the board and settings scroll inside the window** instead of scrolling the whole page, so group headers
+  stay in view and each board column scrolls on its own.
+
 ## [0.1.32] - 2026-11-03
 
 ### Added

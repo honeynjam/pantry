@@ -26,6 +26,9 @@ create the space or later in its settings. Spaces can be archived.
 Projects are optional workstreams inside one space, like "Launch" or "Website redesign". An issue can be in one
 project of its own space, or in none.
 
-Archive a project from Space settings → Projects: it leaves the sidebar and pickers, and its issues stay in the
+Right-click a project in the sidebar to open it, add an issue to it, rename or recolour it, copy its link or archive
+it. Right-click a space for its list, board, a new issue in it, its link, its settings or archiving it.
+
+Archive a project from Space settings → Projects (or the sidebar's right-click menu): it leaves the sidebar and pickers, and its issues stay in the
 space without a project. **Restore** brings it back from the Archived list to the end of the project list; the
 issues that lost it stay without a project. If an active project has the same name, rename one of them first.
