@@ -28,14 +28,25 @@ import { PersonAvatar } from "@pantry/ui/components/avatar-stack";
 import { Button } from "@pantry/ui/components/button";
 import { Checkbox } from "@pantry/ui/components/checkbox";
 import { IssueKey } from "@pantry/ui/components/issue-key";
-import { LabelChip } from "@pantry/ui/components/label-chip";
-import { ProjectChip } from "@pantry/ui/components/project-chip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@pantry/ui/components/dropdown-menu";
 import { PriorityGlyph } from "@pantry/ui/components/priority-glyph";
 import { StatusGlyph } from "@pantry/ui/components/status-glyph";
-import { PRIORITY_LABEL } from "@pantry/ui/lib/issue-meta";
+import { PRIORITY_LABEL, resolveLabelColor } from "@pantry/ui/lib/issue-meta";
 import { duration, ease, motion, spring, usePrefersReducedMotion } from "@pantry/ui/lib/motion";
 import { cn } from "@pantry/ui/lib/utils";
-import { CalendarIcon, CornerDownRightIcon, EyeOffIcon, LayersIcon, PlusIcon } from "lucide-react";
+import {
+  CalendarIcon,
+  CornerDownRightIcon,
+  EyeOffIcon,
+  LayersIcon,
+  MoreHorizontalIcon,
+  PlusIcon,
+} from "lucide-react";
 import { memo, useCallback, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { EntryGate } from "../entry";
@@ -453,10 +464,10 @@ function Board({ issues, lookups, space, newIssue, groupBy }: BoardProps) {
         {groupBy === "project" ? (
           <div
             ref={container}
-            className="min-h-0 flex-1 overflow-auto overscroll-x-contain px-3 pb-3"
+            className="min-h-0 flex-1 overflow-auto overscroll-x-contain px-4 pb-3"
           >
             {/* Status headers once, above every lane. */}
-            <div className="bg-background sticky top-0 z-20 flex w-max items-start gap-2 pt-3 pb-1">
+            <div className="bg-background sticky top-0 z-20 flex w-max items-start gap-4 pt-2 pb-1">
               {shown.map((status) => (
                 <ColumnHeader
                   key={status._id}
@@ -464,7 +475,7 @@ function Board({ issues, lookups, space, newIssue, groupBy }: BoardProps) {
                   count={counts.get(status._id) ?? 0}
                   onNewIssue={() => newIssue({ statusId: status._id })}
                   onHide={() => choose(status._id, "hidden")}
-                  className="bg-gray-2 w-68 rounded-lg"
+                  className="w-72"
                 />
               ))}
               {hiddenRail}
@@ -500,7 +511,7 @@ function Board({ issues, lookups, space, newIssue, groupBy }: BoardProps) {
                       <PlusIcon />
                     </Button>
                   </div>
-                  <div className="flex w-max gap-2">
+                  <div className="flex w-max gap-4">
                     {shown.map((status) => (
                       <Column
                         key={status._id}
@@ -535,7 +546,7 @@ function Board({ issues, lookups, space, newIssue, groupBy }: BoardProps) {
         ) : (
           <div
             ref={container}
-            className="flex min-h-0 flex-1 gap-2 overflow-x-auto overscroll-x-contain p-3"
+            className="flex min-h-0 flex-1 gap-4 overflow-x-auto overscroll-x-contain px-4 pt-2 pb-3"
           >
             {shown.map((status) => (
               <Column
@@ -566,7 +577,7 @@ function Board({ issues, lookups, space, newIssue, groupBy }: BoardProps) {
                 // The rest of the selection: edges of a stack under the lifted card.
                 <span
                   aria-hidden
-                  className="border-border bg-card dark:bg-gray-3 absolute inset-x-1.5 -bottom-1.5 h-full rounded-md border"
+                  className="border-border bg-popover dark:bg-gray-2 absolute inset-x-1.5 -bottom-1.5 h-full rounded-md border"
                 />
               )}
               <CardBody
@@ -590,6 +601,10 @@ function Board({ issues, lookups, space, newIssue, groupBy }: BoardProps) {
   );
 }
 
+/**
+ * A column's header, Linear-style: one quiet line (status glyph, name, muted count). "+" and "…"
+ * (hide the column) appear on hover, on keyboard focus, or while the menu is open.
+ */
 function ColumnHeader({
   status,
   count,
@@ -603,39 +618,52 @@ function ColumnHeader({
   onHide?: () => void;
   className?: string;
 }) {
+  const reveal =
+    "opacity-0 group-hover/header:opacity-100 focus-visible:opacity-100 aria-expanded:opacity-100 transition-opacity duration-(--duration-instant)";
   return (
-    <div
-      className={cn("group/header flex h-10 shrink-0 items-center gap-2 pr-1.5 pl-3", className)}
-    >
+    <div className={cn("group/header flex h-9 shrink-0 items-center gap-2 px-1", className)}>
       <StatusGlyph category={status.category} color={statusColor(status)} />
       <h2 className="text-foreground truncate font-sans text-sm font-medium tracking-normal">
         {status.name}
       </h2>
-      <span className="text-muted-foreground tabular font-mono text-xs">{count}</span>
+      <span className="text-muted-foreground tabular text-sm">{count}</span>
       <span className="ml-auto flex items-center gap-0.5">
-        {onHide && (
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            // Shown on hover or keyboard focus, like Linear's column actions.
-            className="text-muted-foreground opacity-0 group-hover/header:opacity-100 focus-visible:opacity-100"
-            aria-label={`Hide ${status.name}`}
-            title="Hide column"
-            onClick={onHide}
-          >
-            <EyeOffIcon />
-          </Button>
-        )}
         <Button
           variant="ghost"
           size="icon-xs"
-          className="text-muted-foreground"
+          className={cn("text-muted-foreground", reveal)}
           aria-label={`New issue in ${status.name}`}
           title="New issue"
           onClick={onNewIssue}
         >
           <PlusIcon />
         </Button>
+        {onHide && (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  className={cn("text-muted-foreground", reveal)}
+                  aria-label={`${status.name} column actions`}
+                />
+              }
+            >
+              <MoreHorizontalIcon />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuItem onClick={onNewIssue}>
+                <PlusIcon />
+                New issue
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onHide}>
+                <EyeOffIcon />
+                Hide column
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </span>
     </div>
   );
@@ -673,12 +701,13 @@ function Column({
   const others = issues.filter((issue) => !moving.has(issue._id));
   const indicatorBefore = indicator !== null ? (others[indicator]?._id ?? "end") : null;
   return (
+    // No box around the column: the cards are the surface. A drag over it tints it faintly.
     <section
       aria-label={laneName ? `${laneName}, ${status.name}` : status.name}
       className={cn(
-        "bg-gray-2 flex w-68 shrink-0 flex-col rounded-lg transition-colors duration-(--duration-instant)",
+        "group/column -mx-1 flex w-72 shrink-0 flex-col rounded-lg px-1 transition-colors duration-(--duration-instant)",
         header && "max-h-full",
-        isOver && "bg-gray-3",
+        isOver && "bg-gray-2 dark:bg-gray-2",
       )}
     >
       {header && (
@@ -692,8 +721,8 @@ function Column({
       <div
         ref={setNodeRef}
         className={cn(
-          "flex flex-col gap-1.5 px-1.5 pb-1.5",
-          header ? "min-h-24 flex-1 overflow-y-auto" : "min-h-16 pt-1.5",
+          "flex flex-col gap-1.5 pb-2",
+          header ? "min-h-24 flex-1 overflow-y-auto" : "min-h-14 pt-1",
         )}
       >
         {issues.map((issue) => (
@@ -711,7 +740,8 @@ function Column({
           <button
             type="button"
             onClick={onNewIssue}
-            className="text-faint-foreground hover:text-muted-foreground hover:bg-gray-3 flex h-9 cursor-default items-center justify-center gap-1.5 rounded-md text-xs transition-colors duration-(--duration-instant)"
+            // Quiet until you point at the empty column (or tab to it).
+            className="text-muted-foreground hover:bg-gray-2 flex h-8 cursor-default items-center justify-center gap-1.5 rounded-md text-xs opacity-0 transition-[opacity,background-color] duration-(--duration-instant) group-hover/column:opacity-100 focus-visible:opacity-100"
           >
             <PlusIcon className="size-3.5" aria-hidden />
             New issue
@@ -727,7 +757,7 @@ function DropIndicator() {
   return (
     <div
       aria-hidden
-      className="bg-foreground pointer-events-none absolute inset-x-1 -top-[4px] z-10 h-0.5 rounded-full"
+      className="bg-foreground pointer-events-none absolute inset-x-0 -top-1 z-10 h-0.5 rounded-full"
     />
   );
 }
@@ -750,11 +780,8 @@ function HiddenColumns({
   onShow: (statusId: Id<"statuses">) => void;
 }) {
   return (
-    <section
-      aria-label="Hidden columns"
-      className="flex w-56 shrink-0 flex-col gap-0.5 self-start pt-1"
-    >
-      <h2 className="text-muted-foreground flex h-8 items-center px-2 font-sans text-xs font-medium tracking-normal">
+    <section aria-label="Hidden columns" className="flex w-56 shrink-0 flex-col gap-0.5 self-start">
+      <h2 className="text-muted-foreground flex h-9 items-center px-2 font-sans text-sm font-medium tracking-normal">
         Hidden columns
       </h2>
       {statuses.map((status) => (
@@ -796,14 +823,14 @@ function HiddenColumn({
       title={`Show ${status.name}`}
       aria-label={`${status.name}, ${count} ${count === 1 ? "issue" : "issues"}. Show column`}
       className={cn(
-        "text-muted-foreground hover:bg-gray-3 hover:text-foreground flex h-8 cursor-default items-center gap-2 rounded-md px-2 text-sm transition-colors duration-(--duration-instant)",
-        dragging && "bg-gray-2 border-border border border-dashed",
-        over && "bg-gray-4 text-foreground border-border-strong",
+        "text-muted-foreground hover:bg-gray-2 hover:text-foreground flex h-8 cursor-default items-center gap-2 rounded-md border border-transparent px-2 text-sm transition-colors duration-(--duration-instant)",
+        dragging && "border-border border-dashed",
+        over && "bg-gray-3 text-foreground border-border-strong",
       )}
     >
       <StatusGlyph category={status.category} color={statusColor(status)} />
       <span className="truncate">{status.name}</span>
-      <span className="tabular ml-auto font-mono text-xs">{count}</span>
+      <span className="tabular ml-auto text-xs">{count}</span>
     </button>
   );
 }
@@ -857,14 +884,19 @@ const Card = memo(function Card({
       className={cn(
         "group/card rounded-md select-none",
         // Off-screen cards skip layout and paint, so long columns stay fast.
-        "[contain-intrinsic-size:auto_5.5rem] [content-visibility:auto]",
-        // The cursor: a ring that follows J/K (and keyboard focus).
-        isCursor ? "outline-ring outline-2 outline-offset-1 outline-solid" : "outline-none",
+        "[contain-intrinsic-size:auto_4.75rem] [content-visibility:auto]",
+        // The cursor's ring follows J/K and Tab: shown for keyboard focus, or for the cursor while
+        // focus is elsewhere (a picker), never for a mouse click.
+        "outline-ring outline-offset-1 outline-solid focus-visible:outline-2",
+        isCursor ? "not-focus:outline-2 focus:not-focus-visible:outline-0" : "outline-0",
         placeholder && "border-border-strong rounded-md border border-dashed",
       )}
       {...draggable.attributes}
       {...listeners}
-      onFocus={() => onCursor(issue._id)}
+      // Keyboard focus (Tab, J/K) moves the cursor; a click or right-click doesn't, so no ring.
+      onFocus={(event) => {
+        if (event.currentTarget.matches(":focus-visible")) onCursor(issue._id);
+      }}
       onKeyDown={(event) => {
         onKeyDown?.(event);
         if (event.key === "Enter" && !event.defaultPrevented && !draggable.isDragging)
@@ -891,7 +923,7 @@ const Card = memo(function Card({
               onTouchStart={(event) => event.stopPropagation()}
               tabIndex={-1}
               aria-label={`Select ${issue.key}`}
-              className="relative z-10"
+              className="relative z-10 -my-0.5"
             />
           ) : null
         }
@@ -913,8 +945,11 @@ const Card = memo(function Card({
 });
 
 /**
- * A card, like Linear's: key and assignee, the title, then a row of small property chips (priority,
- * project, labels, due date, sub-issue progress). Hairline border, no shadow until it's lifted.
+ * A card, like Linear's: a flat surface one step off the board (white with a hairline in light, a
+ * hair lighter than the board in dark) and a fixed rhythm: key and assignee, the title (two lines
+ * at most), then one line of metadata. Nothing on that line is boxed: priority is a bare glyph,
+ * the due date and project are glyph + text, labels are small hairline pills. What doesn't fit is
+ * counted ("+2") or truncated, never wrapped.
  */
 function CardBody({
   issue,
@@ -942,7 +977,10 @@ function CardBody({
   const labels = issue.labelIds.map(lookups.label).filter((label) => label !== undefined);
   const project = lookups.project(issue.projectId);
   const overdue = issue.dueDate !== undefined && issue.dueDate < today();
-  const chips =
+  // Room on the line: two labels when it's otherwise short, one when it carries a project and a date.
+  const shownLabels = labels.slice(0, project && issue.dueDate ? 1 : 2);
+  const moreLabels = labels.length - shownLabels.length;
+  const meta =
     issue.priority !== 0 ||
     project !== undefined ||
     labels.length > 0 ||
@@ -951,12 +989,14 @@ function CardBody({
   return (
     <div
       className={cn(
-        "border-border bg-card dark:bg-gray-3 relative flex cursor-default flex-col gap-1.5 rounded-md border px-3 py-2.5",
-        "hover:border-border-strong transition-colors duration-(--duration-instant)",
-        // Right-clicked: the card its menu acts on (set on the wrapper, no re-render).
-        "[[data-menu-open]_&]:border-border-strong [[data-menu-open]_&]:bg-gray-3 dark:[[data-menu-open]_&]:bg-gray-4",
-        lifted && "shadow-overlay border-border-strong",
-        selected && "bg-gray-3 dark:bg-gray-5",
+        "relative flex cursor-default flex-col gap-1 rounded-md border px-2.5 pt-2 pb-2",
+        "border-border/70 bg-popover dark:bg-gray-2 dark:border-border/60",
+        "transition-colors duration-(--duration-instant)",
+        // Hover and right-click (its menu is open; set on the wrapper, no re-render): a shade up.
+        "hover:border-border-strong dark:hover:bg-gray-3",
+        "[[data-menu-open]_&]:border-border-strong dark:[[data-menu-open]_&]:bg-gray-3",
+        selected && "bg-gray-3 dark:bg-gray-4",
+        lifted && "border-border-strong shadow-overlay",
         className,
       )}
     >
@@ -966,14 +1006,14 @@ function CardBody({
         <IssueKey value={issue.key} />
         {parentKey && (
           <span
-            className="text-muted-foreground flex min-w-0 items-center gap-0.5 text-xs"
+            className="text-faint-foreground flex min-w-0 items-center gap-0.5 text-xs"
             title={`Sub-issue of ${parentKey}`}
           >
             <CornerDownRightIcon className="size-3 shrink-0" aria-hidden />
-            <span className="truncate font-mono">{parentKey}</span>
+            <span className="truncate font-mono tracking-tight">{parentKey}</span>
           </span>
         )}
-        <span className="ml-auto">
+        <span className="ml-auto flex">
           {assignee ? (
             <PersonAvatar
               person={{ name: assignee.displayName, avatarUrl: assignee.avatarUrl }}
@@ -987,46 +1027,70 @@ function CardBody({
           )}
         </span>
       </div>
-      <span className="text-foreground line-clamp-3 text-sm leading-5 font-medium">
+      <span className="text-foreground line-clamp-2 text-sm leading-5 font-medium">
         {issue.title}
       </span>
-      {chips && (
-        <div className="flex flex-wrap items-center gap-1 pt-0.5">
+      {meta && (
+        <div className="text-muted-foreground mt-0.5 flex h-5 min-w-0 items-center gap-2 overflow-hidden text-xs whitespace-nowrap">
           {issue.priority !== 0 && (
-            <span
-              className="border-border flex size-5 items-center justify-center rounded-sm border"
+            <PriorityGlyph
+              priority={issue.priority}
+              size={14}
               title={`Priority: ${PRIORITY_LABEL[issue.priority]}`}
-            >
-              <PriorityGlyph priority={issue.priority} size={12} />
-            </span>
-          )}
-          {project && (
-            <ProjectChip
-              name={project.name}
-              color={project.color}
-              title={`Project: ${project.name}`}
-              // The card is gray-3 in the dark: one step up keeps the chip visible.
-              className="dark:bg-gray-5"
+              className="shrink-0"
             />
           )}
-          {labels.map((label) => (
-            <LabelChip key={label._id} name={label.name} color={label.color} />
-          ))}
+          {subIssues && subIssues.length > 0 && <SubIssueProgress subIssues={subIssues} />}
           {issue.dueDate && (
             <span
               className={cn(
-                "border-border tabular flex h-5 items-center gap-1 rounded-sm border px-1.5 font-mono text-xs",
-                overdue ? "text-destructive" : "text-muted-foreground",
+                "tabular flex shrink-0 items-center gap-1",
+                overdue && "text-destructive",
               )}
-              title={overdue ? "Overdue" : "Due"}
+              title={
+                overdue ? `Overdue: ${formatDay(issue.dueDate)}` : `Due ${formatDay(issue.dueDate)}`
+              }
             >
               <CalendarIcon className="size-3" aria-hidden />
               {formatDay(issue.dueDate)}
             </span>
           )}
-          {subIssues && subIssues.length > 0 && (
-            <span className="border-border flex h-5 items-center rounded-sm border px-1.5">
-              <SubIssueProgress subIssues={subIssues} />
+          {project && (
+            <span
+              className="flex min-w-0 shrink items-center gap-1.5"
+              title={`Project: ${project.name}`}
+            >
+              <span
+                aria-hidden
+                className="size-2 shrink-0 rounded-[2px]"
+                style={{ background: projectColor(project) }}
+              />
+              <span className="max-w-24 truncate">{project.name}</span>
+            </span>
+          )}
+          {shownLabels.map((label) => (
+            <span
+              key={label._id}
+              className="border-border flex h-4.5 min-w-0 shrink items-center gap-1 rounded-full border pr-1.5 pl-1"
+              title={label.name}
+            >
+              <span
+                aria-hidden
+                className="size-1.5 shrink-0 rounded-full"
+                style={{ background: resolveLabelColor(label.color) }}
+              />
+              <span className="truncate">{label.name}</span>
+            </span>
+          ))}
+          {moreLabels > 0 && (
+            <span
+              className="tabular shrink-0"
+              title={labels
+                .slice(shownLabels.length)
+                .map((label) => label.name)
+                .join(", ")}
+            >
+              +{moreLabels}
             </span>
           )}
         </div>

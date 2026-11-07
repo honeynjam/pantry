@@ -21,9 +21,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
-- **The board looks and works more like Linear's.** Compact columns with a count and **+** in the header, quieter
-  cards with property chips, empty columns hidden in a Hidden columns list you can drop onto, multi-select drag, and
-  a placeholder where the dragged card was. On touch screens, hold a card briefly to drag it, so swiping scrolls.
+- **The board looks and works more like Linear's.** No boxes around columns, just a quiet header with **+** and
+  **…** on hover. Flatter, denser cards: key and assignee, a two-line title, then one line of metadata (bare
+  priority icon, sub-issue progress, due date, project, compact labels with "+2" for the rest). Empty columns are
+  hidden in a Hidden columns list you can drop onto; selected cards drag together, leaving a placeholder. On touch
+  screens, hold a card briefly to drag it, so swiping scrolls.
 - **Lists, the board and settings scroll inside the window** instead of scrolling the whole page, so group headers
   stay in view and each board column scrolls on its own.
 

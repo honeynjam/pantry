@@ -27,12 +27,14 @@ Lists filter by status, assignee, priority and label. Filters live in the URL, s
 
 ### The board
 
-Each column shows its status, how many issues it has, and **+** to add an issue there. Cards show the key and
-assignee, the title, then priority, project, labels, due date and sub-issue progress.
+Columns are a quiet header (status, name and count) over the cards; point at a header for **+** (new issue in
+that column) and **…** (hide the column). A card shows its key and assignee, the title, then one line of
+metadata: priority, sub-issue progress, due date, project and labels. Labels that don't fit show as a count
+("+2"); open the issue to see everything.
 
-Empty columns start hidden, in **Hidden columns** at the end of the board. Hide any column with the eye icon in its
-header (it shows on hover); click a hidden column to show it again. Pantry remembers which columns you hid, per space,
-on that device. You can drop a card on a hidden column to move it there.
+Empty columns start hidden, in **Hidden columns** at the end of the board. Hide any column from its **…** menu;
+click a hidden column to show it again. Pantry remembers which columns you hid, per space, on that device. You can
+drop a card on a hidden column to move it there.
 
 ### Drag and drop
 
