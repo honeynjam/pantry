@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.1.34] - 2026-11-07
+
 ### Changed
 
 - **Sync upstream checks for a new release every day** instead of every Monday, so an update PR opens (and, with
@@ -221,7 +223,8 @@ work on its issues over MCP. The Mac app is not in this release yet.
 - **`GET /api/instance`**, a quick health check: your instance's name, Convex URLs, server version, the oldest Mac
   app it supports, and whether the auth secret is still missing.
 
-[Unreleased]: https://github.com/honeynjam/pantry/compare/v0.1.33...HEAD
+[Unreleased]: https://github.com/honeynjam/pantry/compare/v0.1.34...HEAD
+[0.1.34]: https://github.com/honeynjam/pantry/compare/v0.1.33...v0.1.34
 [0.1.33]: https://github.com/honeynjam/pantry/compare/v0.1.32...v0.1.33
 [0.1.32]: https://github.com/honeynjam/pantry/compare/v0.1.31...v0.1.32
 [0.1.31]: https://github.com/honeynjam/pantry/compare/v0.1.30...v0.1.31
