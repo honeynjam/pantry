@@ -1,6 +1,7 @@
 "use client";
 
 import type { Doc } from "@pantry/backend/dataModel";
+import { openContextMenuAt } from "@pantry/ui/components/context-menu";
 import { useSidebar } from "@pantry/ui/components/sidebar";
 import {
   createContext,
@@ -101,6 +102,12 @@ export function AppCommandsProvider({
   useShortcut("goMyIssues", "global", () => navigate(routes.myIssues));
   useShortcut("goSpace", "global", () => goToSpace("list"));
   useShortcut("goBoard", "global", () => goToSpace("board"));
+  // Shift+F10: the right-click menu of whatever has focus (a row, a card, a sidebar item).
+  useShortcut("contextMenu", "global", () => {
+    const focused = document.activeElement;
+    if (!focused || focused === document.body) return false;
+    if (!openContextMenuAt(focused)) return false;
+  });
 
   const value = useMemo<AppCommands>(
     () => ({

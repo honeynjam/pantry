@@ -35,6 +35,7 @@ export type ShortcutDef = {
 export const SHORTCUT_IDS = [
   "palette",
   "help",
+  "contextMenu",
   "sidebar",
   "newIssue",
   "newSubIssue",
@@ -141,6 +142,14 @@ export const SHORTCUTS: ReadonlyArray<ShortcutDef> = [
     group: "General",
     where: everywhere,
     unbound: true,
+  },
+  {
+    id: "contextMenu",
+    binding: "Shift+F10",
+    display: "shift+f10",
+    label: "Open the right-click menu for what's focused",
+    group: "General",
+    where: everywhere,
   },
   {
     id: "sidebar",

@@ -44,7 +44,7 @@ const PLACEHOLDERS: Record<QuickEditKind, string> = {
   dueDate: "Due date… (or type 2026-11-30)",
 };
 
-type Option = {
+export type QuickEditOption = {
   id: string;
   label: string;
   keywords?: string[];
@@ -54,7 +54,7 @@ type Option = {
   apply: () => void;
 };
 
-const plural = (count: number, one: string) => `${count} ${count === 1 ? one : `${one}s`}`;
+export const plural = (count: number, one: string) => `${count} ${count === 1 ? one : `${one}s`}`;
 
 /**
  * Quick edit for the selection (spec §4 S/A/L/P/D): a small palette of options that applies to
@@ -118,13 +118,14 @@ function shared<T>(
   return hits === 0 ? false : hits === targets.length ? true : "mixed";
 }
 
-function buildOptions(
+/** The options S/A/L/P/D offer for `targets`; the context menu's submenus show the same ones. */
+export function buildOptions(
   kind: QuickEditKind,
   targets: ReadonlyArray<ListIssue>,
   lookups: Lookups,
   actions: IssueActions,
   query: string,
-): Option[] {
+): QuickEditOption[] {
   const { data } = lookups;
   const many = targets.length > 1;
   const done = (message: string) => many && toast(message);
@@ -175,7 +176,7 @@ function buildOptions(
           checked: shared(targets, (issue) => issue.assigneeId ?? null, null),
           apply: () => assign(null, ""),
         },
-        ...people.map<Option>((member) => ({
+        ...people.map<QuickEditOption>((member) => ({
           id: member._id,
           label: member._id === data.me._id ? `${member.displayName} (you)` : member.displayName,
           keywords: member._id === data.me._id ? ["me", "myself"] : [],
@@ -218,7 +219,7 @@ function buildOptions(
                   void actions.update(issue._id, { labelIds: [...issue.labelIds, label._id] });
               }
             },
-          } satisfies Option;
+          } satisfies QuickEditOption;
         });
     case "dueDate": {
       const set = (day: string | null) => {
@@ -233,7 +234,7 @@ function buildOptions(
       const typed = query.trim();
       const valid =
         /^\d{4}-\d{2}-\d{2}$/.test(typed) && !Number.isNaN(new Date(`${typed}T00:00:00`).getTime());
-      const day = (id: string, label: string, value: string): Option => ({
+      const day = (id: string, label: string, value: string): QuickEditOption => ({
         id,
         label,
         keywords: [formatDay(value)],

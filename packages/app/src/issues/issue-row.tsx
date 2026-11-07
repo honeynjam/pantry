@@ -11,6 +11,7 @@ import { CornerDownRightIcon } from "lucide-react";
 import { memo } from "react";
 import { routes, useNavigation } from "../navigation";
 import type { IssueActions } from "./actions";
+import { useRowDrag } from "./list-dnd";
 import type { Lookups, ListIssue } from "./lookups";
 import { AssigneePicker, DueDatePicker, PriorityPicker, StatusPicker } from "./pickers";
 import { SubIssueProgress } from "./sub-issue-progress";
@@ -24,6 +25,7 @@ import { SubIssueProgress } from "./sub-issue-progress";
  * Memoised: rows get the selection as plain flags and stable callbacks, and lists keep unchanged
  * issues' identity (`useStable`), so J/K or one changed issue re-renders one or two rows, not all.
  * Without `onToggle` the row has no selection (no checkbox, focus highlight instead of a cursor).
+ * The whole row drags (list-dnd.tsx); it must render inside `ListDragAndDrop`.
  */
 export const IssueRow = memo(function IssueRow({
   issue,
@@ -53,8 +55,11 @@ export const IssueRow = memo(function IssueRow({
   const selectable = onToggle !== undefined;
   const labels = issue.labelIds.map(lookups.label).filter((label) => label !== undefined);
   const project = lookups.project(issue.projectId);
+  const drag = useRowDrag(issue._id);
   return (
     <div
+      ref={drag.ref}
+      {...drag.listeners}
       data-issue-id={issue._id}
       data-cursor={isCursor || undefined}
       data-selected={isSelected || undefined}
@@ -63,6 +68,8 @@ export const IssueRow = memo(function IssueRow({
         "group/row h-row border-border hover:bg-accent relative isolate flex items-center gap-2 border-b px-3 text-sm transition-colors duration-(--duration-instant) last:border-b-0",
         isSelected && "bg-gray-3",
         !selectable && "focus-within:bg-accent",
+        // Right-clicked (its menu is open) and being dragged: set on the element, no re-render.
+        "data-menu-open:bg-accent data-dragging:opacity-40",
       )}
     >
       {isCursor && (
@@ -78,6 +85,8 @@ export const IssueRow = memo(function IssueRow({
           <Checkbox
             checked={isSelected}
             onCheckedChange={() => onToggle(issue._id)}
+            // Ticking a box never starts a drag.
+            onMouseDown={(event) => event.stopPropagation()}
             tabIndex={-1}
             aria-label={`Select ${issue.key}`}
             className={cn(
@@ -113,6 +122,8 @@ export const IssueRow = memo(function IssueRow({
         <Link
           href={routes.issue(issue.key)}
           data-issue-focus
+          draggable={false}
+          {...drag.focusProps}
           className="text-foreground min-w-0 truncate outline-none after:absolute after:inset-0 after:content-[''] focus-visible:underline"
         >
           {issue.title}

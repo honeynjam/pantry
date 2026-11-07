@@ -26,6 +26,7 @@ import { rememberListLocation } from "../shell/locations";
 import { useShortcut, useShortcutMap, useShortcutScope } from "../use-shortcuts";
 import type { IssueActions } from "./actions";
 import type { Lookups, ListIssue } from "./lookups";
+import { issueDrag } from "./drag-state";
 import { assignToMe, useQuickEdit, type QuickEditKind } from "./quick-edit";
 
 /**
@@ -144,8 +145,9 @@ export function useIssueSelection({
   };
 
   useShortcutScope("list");
-  useShortcut("next", "list", () => moveCursor(1));
-  useShortcut("previous", "list", () => moveCursor(-1));
+  // While an issue is being dragged, its keys (Esc cancels, Enter drops) aren't the list's.
+  useShortcut("next", "list", () => !issueDrag.active && moveCursor(1));
+  useShortcut("previous", "list", () => !issueDrag.active && moveCursor(-1));
   useShortcut("select", "list", () => {
     if (ordered.length === 0) return false;
     const id = cursor ?? ordered[0]!._id;
@@ -156,7 +158,7 @@ export function useIssueSelection({
     toggle(id);
   });
   useShortcut("open", "list", (event) => {
-    if (!cursor) return false;
+    if (!cursor || issueDrag.active) return false;
     // Enter on some other control (a button, a menu trigger) is that control's.
     const target = event.target as HTMLElement | null;
     const row = target?.closest?.("[data-issue-id]");
@@ -167,6 +169,7 @@ export function useIssueSelection({
     navigate(routes.issue(issue.key));
   });
   useShortcut("escape", "list", () => {
+    if (issueDrag.active) return false;
     if (selected.size > 0) setSelected(new Set());
     else if (cursor) setCursorState(null);
     else return false;

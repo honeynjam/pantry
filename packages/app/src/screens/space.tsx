@@ -6,6 +6,7 @@ import type { Doc, Id } from "@pantry/backend/dataModel";
 import type { Project } from "@pantry/backend/model";
 import { Button } from "@pantry/ui/components/button";
 import { StatusGlyph } from "@pantry/ui/components/status-glyph";
+import { cn } from "@pantry/ui/lib/utils";
 import { useQuery } from "convex/react";
 import {
   DropdownMenu,
@@ -31,6 +32,14 @@ import {
   type GroupBy,
 } from "../issues/filters";
 import { IssueRow } from "../issues/issue-row";
+import { IssueContextMenu } from "../issues/issue-menu";
+import {
+  GroupDropIndicator,
+  ListDragAndDrop,
+  useGroupDrop,
+  type DropGroup,
+  type ListOrder,
+} from "../issues/list-dnd";
 import { RowPickers } from "../issues/pickers";
 import { useIssueSelection } from "../issues/selection";
 import { statusColor, useLookups, type Lookups, type ListIssue } from "../issues/lookups";
@@ -307,12 +316,15 @@ export function IssueList({
   newIssue,
   groupBy = "status",
   projects = [],
+  order = "manual",
 }: {
   issues: ListIssue[];
   lookups: Lookups;
   newIssue: (defaults?: NewIssueDefaults) => void;
   groupBy?: GroupBy;
   projects?: Project[];
+  /** "updated" for My issues: dragging changes status only (see list-dnd.tsx). */
+  order?: ListOrder;
 }) {
   const actions = useIssueActions();
   const family = useIssueFamily(issues);
@@ -324,6 +336,21 @@ export function IssueList({
   const ordered = useMemo(() => groups.flatMap((group) => group.issues), [groups]);
   const selection = useIssueSelection({ ordered, lookups, actions, container });
   const { cursor, selected, setCursor, toggle } = selection.value;
+  const dropGroups = useMemo<DropGroup[]>(
+    () =>
+      groups.map((group) =>
+        group.kind === "status"
+          ? { ...group, name: group.status.name }
+          : {
+              kind: "project",
+              id: group.id,
+              name: group.project?.name ?? "No project",
+              projectId: group.project?._id ?? null,
+              issues: group.issues,
+            },
+      ),
+    [groups],
+  );
 
   return (
     <RowPickers
@@ -331,75 +358,110 @@ export function IssueList({
       members={lookups.data.members}
       me={lookups.data.me}
     >
-      {/* layoutScroll: the cursor highlight measures rows correctly while the list is scrolled. */}
-      <motion.div
-        ref={container}
-        layoutScroll
-        data-any-selected={selected.size > 0 || undefined}
-        className="group/list min-h-0 flex-1 overflow-y-auto"
-      >
-        {groups.map((group) => {
-          const name =
-            group.kind === "status" ? group.status.name : (group.project?.name ?? "No project");
-          const rows = group.issues;
-          return (
-            <section key={group.id} aria-label={name}>
-              <div className="border-border bg-gray-2 sticky top-0 z-20 flex h-8 items-center gap-2 border-b px-3">
-                {group.kind === "status" ? (
-                  <StatusGlyph category={group.status.category} color={statusColor(group.status)} />
-                ) : group.project ? (
-                  <span
-                    className="size-2.5 rounded-[3px]"
-                    style={{ background: projectColor(group.project) }}
-                    aria-hidden
+      <IssueContextMenu issues={ordered} selected={selected} lookups={lookups} actions={actions}>
+        <ListDragAndDrop
+          groups={dropGroups}
+          ordered={ordered}
+          selected={selected}
+          order={order}
+          lookups={lookups}
+          actions={actions}
+          container={container}
+        >
+          {/* layoutScroll: the cursor highlight measures rows correctly while the list is scrolled. */}
+          <motion.div
+            ref={container}
+            layoutScroll
+            data-any-selected={selected.size > 0 || undefined}
+            className="group/list min-h-0 flex-1 overflow-y-auto"
+          >
+            {groups.map((group) => (
+              <section
+                key={group.id}
+                aria-label={
+                  group.kind === "status"
+                    ? group.status.name
+                    : (group.project?.name ?? "No project")
+                }
+                data-drop-group={group.id}
+                className="relative"
+              >
+                <GroupHeader group={group} newIssue={newIssue} />
+                {group.issues.map((issue) => (
+                  <IssueRow
+                    key={issue._id}
+                    issue={issue}
+                    lookups={lookups}
+                    actions={actions}
+                    parentKey={issue.parentId ? family.byId.get(issue.parentId)?.key : undefined}
+                    subIssues={family.children.get(issue._id)}
+                    isCursor={cursor === issue._id}
+                    isSelected={selected.has(issue._id)}
+                    onCursor={setCursor}
+                    onToggle={toggle}
                   />
-                ) : (
-                  <LayersIcon className="text-muted-foreground size-3.5" aria-hidden />
-                )}
-                <h2 className="text-foreground font-sans text-sm font-medium tracking-normal">
-                  {name}
-                </h2>
-                <span className="text-muted-foreground tabular font-mono text-xs">
-                  {rows.length}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  className="ml-auto"
-                  aria-label={`New issue in ${name}`}
-                  onClick={() =>
-                    newIssue(
-                      group.kind === "status"
-                        ? { statusId: group.status._id }
-                        : group.project
-                          ? { projectId: group.project._id }
-                          : {},
-                    )
-                  }
-                >
-                  <PlusIcon />
-                </Button>
-              </div>
-              {rows.map((issue) => (
-                <IssueRow
-                  key={issue._id}
-                  issue={issue}
-                  lookups={lookups}
-                  actions={actions}
-                  parentKey={issue.parentId ? family.byId.get(issue.parentId)?.key : undefined}
-                  subIssues={family.children.get(issue._id)}
-                  isCursor={cursor === issue._id}
-                  isSelected={selected.has(issue._id)}
-                  onCursor={setCursor}
-                  onToggle={toggle}
-                />
-              ))}
-            </section>
-          );
-        })}
-      </motion.div>
+                ))}
+                <GroupDropIndicator groupId={group.id} />
+              </section>
+            ))}
+          </motion.div>
+        </ListDragAndDrop>
+      </IssueContextMenu>
       {selection.element}
     </RowPickers>
+  );
+}
+
+/** A group's sticky header: what it is, how many, "+"; it lights up while a drag would drop here. */
+function GroupHeader({
+  group,
+  newIssue,
+}: {
+  group: Group;
+  newIssue: (defaults?: NewIssueDefaults) => void;
+}) {
+  const name = group.kind === "status" ? group.status.name : (group.project?.name ?? "No project");
+  const drop = useGroupDrop(group.id);
+  return (
+    <div
+      data-drop-header
+      className={cn(
+        "border-border bg-gray-2 sticky top-0 z-20 flex h-8 items-center gap-2 border-b px-3 transition-colors duration-(--duration-instant)",
+        drop.over && "bg-gray-4",
+      )}
+    >
+      {group.kind === "status" ? (
+        <StatusGlyph category={group.status.category} color={statusColor(group.status)} />
+      ) : group.project ? (
+        <span
+          className="size-2.5 rounded-[3px]"
+          style={{ background: projectColor(group.project) }}
+          aria-hidden
+        />
+      ) : (
+        <LayersIcon className="text-muted-foreground size-3.5" aria-hidden />
+      )}
+      <h2 className="text-foreground font-sans text-sm font-medium tracking-normal">{name}</h2>
+      <span className="text-muted-foreground tabular font-mono text-xs">{group.issues.length}</span>
+      {drop.hint && <span className="text-muted-foreground text-xs">{drop.hint}</span>}
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        className="ml-auto"
+        aria-label={`New issue in ${name}`}
+        onClick={() =>
+          newIssue(
+            group.kind === "status"
+              ? { statusId: group.status._id }
+              : group.project
+                ? { projectId: group.project._id }
+                : {},
+          )
+        }
+      >
+        <PlusIcon />
+      </Button>
+    </div>
   );
 }
 

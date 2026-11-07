@@ -45,6 +45,7 @@ import {
   ProjectPicker,
   StatusPicker,
 } from "../issues/pickers";
+import { IssueContextMenu } from "../issues/issue-menu";
 import { useIssueQuickEdit } from "../issues/selection";
 import { SubIssueProgress } from "../issues/sub-issue-progress";
 import { CommentComposer, Timeline } from "../issues/timeline";
@@ -53,6 +54,7 @@ import { routes, useNavigation } from "../navigation";
 import { useAppCommands } from "../shell/app-commands";
 import { AppShell, type WorkspaceData } from "../shell/app-shell";
 import { lastListLocation } from "../shell/locations";
+import { copyText } from "../lib/clipboard";
 import { useShortcut, useShortcutScope } from "../use-shortcuts";
 import { usePaletteActions } from "../palette/palette-actions";
 import { describeError } from "./form-error";
@@ -332,33 +334,36 @@ function SubIssueList({
 }) {
   const { Link } = useNavigation();
   return (
-    <ul className="border-border flex flex-col overflow-hidden rounded-lg border">
-      {subIssues.map((sub) => (
-        <li
-          key={sub._id}
-          className="h-row border-border hover:bg-accent relative flex items-center gap-2 border-b px-2 text-sm transition-colors duration-(--duration-instant) last:border-b-0"
-        >
-          <StatusPicker
-            statuses={lookups.data.statuses}
-            value={sub.statusId}
-            onChange={(statusId) => void actions.move(sub._id, statusId)}
-          />
-          <IssueKey value={sub.key} className="w-14" />
-          <Link
-            href={routes.issue(sub.key)}
-            className="text-foreground min-w-0 flex-1 truncate outline-none after:absolute after:inset-0 focus-visible:underline"
+    <IssueContextMenu issues={subIssues} lookups={lookups} actions={actions}>
+      <ul className="border-border flex flex-col overflow-hidden rounded-lg border">
+        {subIssues.map((sub) => (
+          <li
+            key={sub._id}
+            data-issue-id={sub._id}
+            className="h-row border-border hover:bg-accent data-menu-open:bg-accent relative flex items-center gap-2 border-b px-2 text-sm transition-colors duration-(--duration-instant) last:border-b-0"
           >
-            {sub.title}
-          </Link>
-          <AssigneePicker
-            members={lookups.data.members}
-            me={lookups.data.me}
-            value={sub.assigneeId}
-            onChange={(assigneeId) => void actions.update(sub._id, { assigneeId })}
-          />
-        </li>
-      ))}
-    </ul>
+            <StatusPicker
+              statuses={lookups.data.statuses}
+              value={sub.statusId}
+              onChange={(statusId) => void actions.move(sub._id, statusId)}
+            />
+            <IssueKey value={sub.key} className="w-14" />
+            <Link
+              href={routes.issue(sub.key)}
+              className="text-foreground min-w-0 flex-1 truncate outline-none after:absolute after:inset-0 focus-visible:underline"
+            >
+              {sub.title}
+            </Link>
+            <AssigneePicker
+              members={lookups.data.members}
+              me={lookups.data.me}
+              value={sub.assigneeId}
+              onChange={(assigneeId) => void actions.update(sub._id, { assigneeId })}
+            />
+          </li>
+        ))}
+      </ul>
+    </IssueContextMenu>
   );
 }
 
@@ -591,15 +596,6 @@ function ParentPicker({
       )}
     </div>
   );
-}
-
-async function copyText(text: string, what: string) {
-  try {
-    await navigator.clipboard.writeText(text);
-    toast(`Copied ${what}`);
-  } catch {
-    toast.error("Couldn't copy: the browser blocked the clipboard.");
-  }
 }
 
 function IssueMenu({ issue, subIssueCount }: { issue: Doc<"issues">; subIssueCount: number }) {

@@ -51,6 +51,7 @@ import { LoadingScreen } from "../screens/loading";
 import { AppCommandsProvider, useAppCommands } from "./app-commands";
 import { groupSpaces, KIND_LABEL, modeOf } from "../lib/vocabulary";
 import { projectColor } from "./space-color";
+import { SidebarContextMenu } from "./sidebar-menu";
 import { UserMenu } from "./user-menu";
 
 export type WorkspaceData = FunctionReturnType<typeof api.workspace.current>;
@@ -72,6 +73,7 @@ function NavItem({
   active,
   badge,
   action,
+  spaceId,
   children,
 }: {
   href: string;
@@ -79,13 +81,18 @@ function NavItem({
   active: boolean;
   badge?: ReactNode;
   action?: ReactNode;
+  /** A space's item: its right-click menu (sidebar-menu.tsx) finds the space by this. */
+  spaceId?: string;
   children: ReactNode;
 }) {
   const { Link } = useNavigation();
   // Reduced motion: no shared layoutId, so the highlight appears in place without travel.
   const reduceMotion = usePrefersReducedMotion();
   return (
-    <SidebarMenuItem>
+    <SidebarMenuItem
+      data-space-id={spaceId}
+      className="data-menu-open:*:data-[slot=sidebar-menu-button]:bg-sidebar-accent"
+    >
       {active && (
         <motion.span
           layoutId={reduceMotion ? undefined : "sidebar-active"}
@@ -129,6 +136,7 @@ function SpaceNavItem({ space, projects }: { space: Doc<"spaces">; projects: Pro
     <>
       <NavItem
         href={list}
+        spaceId={space._id}
         tooltip={space.name}
         active={
           onSpace &&
@@ -163,7 +171,11 @@ function SpaceNavItem({ space, projects }: { space: Doc<"spaces">; projects: Pro
             const value = slug(project.name);
             const active = activeProject === value;
             return (
-              <SidebarMenuSubItem key={project._id}>
+              <SidebarMenuSubItem
+                key={project._id}
+                data-project-id={project._id}
+                className="data-menu-open:*:data-[slot=sidebar-menu-sub-button]:bg-sidebar-accent"
+              >
                 {active && (
                   <motion.span
                     layoutId={reduceMotion ? undefined : "sidebar-active"}
@@ -259,29 +271,31 @@ function AppSidebar({ data }: { data: WorkspaceData }) {
             </NavItem>
           </SidebarMenu>
         </SidebarGroup>
-        {groupSpaces(modeOf(data.workspace), data.spaces).map((group) => (
-          <SidebarGroup key={group.kind}>
-            <SidebarGroupLabel>{group.heading}</SidebarGroupLabel>
-            <SidebarGroupAction
-              title={`New ${KIND_LABEL[group.kind].one.toLowerCase()}`}
-              aria-label={`New ${KIND_LABEL[group.kind].one.toLowerCase()}`}
-              onClick={() => newSpace(group.kind)}
-            >
-              <PlusIcon />
-            </SidebarGroupAction>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {group.spaces.map((space) => (
-                  <SpaceNavItem
-                    key={space._id}
-                    space={space}
-                    projects={data.projects.filter((project) => project.spaceId === space._id)}
-                  />
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
+        <SidebarContextMenu data={data}>
+          {groupSpaces(modeOf(data.workspace), data.spaces).map((group) => (
+            <SidebarGroup key={group.kind}>
+              <SidebarGroupLabel>{group.heading}</SidebarGroupLabel>
+              <SidebarGroupAction
+                title={`New ${KIND_LABEL[group.kind].one.toLowerCase()}`}
+                aria-label={`New ${KIND_LABEL[group.kind].one.toLowerCase()}`}
+                onClick={() => newSpace(group.kind)}
+              >
+                <PlusIcon />
+              </SidebarGroupAction>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {group.spaces.map((space) => (
+                    <SpaceNavItem
+                      key={space._id}
+                      space={space}
+                      projects={data.projects.filter((project) => project.spaceId === space._id)}
+                    />
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          ))}
+        </SidebarContextMenu>
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>

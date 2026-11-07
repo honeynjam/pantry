@@ -83,7 +83,7 @@ function MyIssues({ data }: { data: WorkspaceData }) {
       ) : visible.length === 0 && hasFilters(filters) ? (
         <NoMatches onClear={() => setFilters(EMPTY_FILTERS)} />
       ) : (
-        <IssueList issues={visible} lookups={lookups} newIssue={newIssue} />
+        <IssueList issues={visible} lookups={lookups} newIssue={newIssue} order="updated" />
       )}
     </div>
   );
