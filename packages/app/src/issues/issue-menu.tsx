@@ -5,6 +5,7 @@ import type { Id } from "@pantry/backend/dataModel";
 import type { Project } from "@pantry/backend/model";
 import {
   ContextMenu,
+  ContextMenuArea,
   ContextMenuCheckboxItem,
   ContextMenuContent,
   ContextMenuGroup,
@@ -16,7 +17,6 @@ import {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
   ContextMenuTrigger,
-  skipContextMenu,
 } from "@pantry/ui/components/context-menu";
 import { Keycap } from "@pantry/ui/components/keycap";
 import { StatusGlyph } from "@pantry/ui/components/status-glyph";
@@ -122,6 +122,7 @@ export function IssueContextMenu({
   const [ids, setIds] = useState<Id<"issues">[]>([]);
   const [deleting, setDeleting] = useState<Id<"issues">[] | null>(null);
   const highlighted = useRef<Element[]>([]);
+  const area = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLDivElement>(null);
   const quickEdit = useQuickEdit(lookups, actions, issues);
   useShortcutScope("overlay", open);
@@ -139,17 +140,17 @@ export function IssueContextMenu({
 
   function onContextMenu(event: React.MouseEvent) {
     const row = (event.target as Element).closest<HTMLElement>("[data-issue-id]");
-    if (!row || !trigger.current?.contains(row)) return skipContextMenu(event);
+    if (!row || !area.current?.contains(row)) return false;
     const next = menuTargets(
       issues.map((issue) => issue._id),
       row.dataset.issueId as Id<"issues">,
       selected,
     );
-    if (next.length === 0) return skipContextMenu(event);
+    if (next.length === 0) return false;
     unhighlight();
     // The rows the menu acts on stay marked while it's open (no re-render of the list).
     for (const id of next) {
-      const element = trigger.current.querySelector(`[data-issue-id="${id}"]`);
+      const element = area.current.querySelector(`[data-issue-id="${id}"]`);
       if (element) {
         element.setAttribute("data-menu-open", "");
         highlighted.current.push(element);
@@ -192,6 +193,14 @@ export function IssueContextMenu({
 
   return (
     <>
+      <ContextMenuArea
+        ref={area}
+        trigger={trigger}
+        className="contents"
+        onContextMenu={onContextMenu}
+      >
+        {children}
+      </ContextMenuArea>
       <ContextMenu
         open={open}
         onOpenChange={(next) => {
@@ -199,9 +208,7 @@ export function IssueContextMenu({
           if (!next) unhighlight();
         }}
       >
-        <ContextMenuTrigger ref={trigger} className="contents" onContextMenu={onContextMenu}>
-          {children}
-        </ContextMenuTrigger>
+        <ContextMenuTrigger ref={trigger} hidden />
         <ContextMenuContent className="w-60" onKeyDown={onKeyDown} aria-label="Issue actions">
           {targets.length > 0 && (
             <IssueMenuItems

@@ -6,6 +6,7 @@ import type { Project } from "@pantry/backend/model";
 import { Button } from "@pantry/ui/components/button";
 import {
   ContextMenu,
+  ContextMenuArea,
   ContextMenuCheckboxItem,
   ContextMenuContent,
   ContextMenuGroup,
@@ -16,7 +17,6 @@ import {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
   ContextMenuTrigger,
-  skipContextMenu,
 } from "@pantry/ui/components/context-menu";
 import {
   Dialog,
@@ -77,13 +77,14 @@ export function SidebarContextMenu({
   const [archivingSpace, setArchivingSpace] = useState<Doc<"spaces"> | null>(null);
   const [archivingProject, setArchivingProject] = useState<Project | null>(null);
   const highlighted = useRef<Element | null>(null);
+  const trigger = useRef<HTMLDivElement>(null);
   useShortcutScope("overlay", open);
 
   function onContextMenu(event: React.MouseEvent) {
     const element = (event.target as Element).closest<HTMLElement>(
       "[data-space-id], [data-project-id]",
     );
-    if (!element) return skipContextMenu(event);
+    if (!element) return false;
     highlighted.current?.removeAttribute("data-menu-open");
     element.setAttribute("data-menu-open", "");
     highlighted.current = element;
@@ -101,6 +102,9 @@ export function SidebarContextMenu({
 
   return (
     <>
+      <ContextMenuArea trigger={trigger} className="contents" onContextMenu={onContextMenu}>
+        {children}
+      </ContextMenuArea>
       <ContextMenu
         open={open}
         onOpenChange={(next) => {
@@ -111,9 +115,7 @@ export function SidebarContextMenu({
           }
         }}
       >
-        <ContextMenuTrigger className="contents" onContextMenu={onContextMenu}>
-          {children}
-        </ContextMenuTrigger>
+        <ContextMenuTrigger ref={trigger} hidden />
         <ContextMenuContent className="w-56">
           {space && <SpaceItems space={space} onArchive={() => setArchivingSpace(space)} />}
           {project && (

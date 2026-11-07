@@ -22,9 +22,9 @@ import {
  * Menu parts, the same ones the dropdown menu restyles, so they're shared rather than copied: a
  * context menu looks and moves exactly like a dropdown, it just opens at the pointer.
  *
- * One menu can serve a whole list: wrap the list in `ContextMenuTrigger` (`className="contents"`
- * keeps the layout) and read which row was right-clicked in `onContextMenu`. Call
- * `skipContextMenu(event)` there to leave the browser's own menu alone (text fields, selected text).
+ * One menu can serve a whole list: wrap the list in `ContextMenuArea` (`className="contents"` keeps
+ * the layout) and read which row was right-clicked in its `onContextMenu`. Text fields and selected
+ * text keep the browser's own menu. Small areas can be a `ContextMenuTrigger` directly.
  * Keyboard: Shift+F10 or the context-menu key opens it on the focused element (`openContextMenuAt`).
  */
 function ContextMenu({ ...props }: ContextMenuPrimitive.Root.Props) {
@@ -108,6 +108,52 @@ function ContextMenuTrigger({ onContextMenu, ...props }: ContextMenuPrimitive.Tr
   );
 }
 
+/**
+ * The right-clickable area for long lists. Everything inside a `ContextMenuTrigger` sits inside the
+ * menu's React context, so in a 600-row list every row's own menu trigger (its pickers) re-rendered
+ * on each right-click. The area keeps the list outside the menu: it decides (`onContextMenu`
+ * returns false to leave the browser's menu alone) and forwards the right-click, at the same point,
+ * to the menu's `trigger`, which renders empty and hidden (`<ContextMenuTrigger ref={…} hidden />`).
+ */
+function ContextMenuArea({
+  trigger,
+  onContextMenu,
+  ...props
+}: Omit<React.ComponentProps<"div">, "onContextMenu"> & {
+  trigger: React.RefObject<HTMLElement | null>;
+  onContextMenu: (event: React.MouseEvent<HTMLDivElement>) => boolean | void;
+}) {
+  return (
+    <div
+      data-slot="context-menu-area"
+      onContextMenu={(event) => {
+        if (wantsNativeMenu(event)) return;
+        // From the keyboard: start again from the focused element, so the menu opens next to it.
+        if (fromKeyboard(event.nativeEvent)) {
+          event.preventDefault();
+          openContextMenuAt(event.target as Element);
+          return;
+        }
+        if (onContextMenu(event) === false || !trigger.current) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const forwarded = new MouseEvent("contextmenu", {
+          bubbles: true,
+          cancelable: true,
+          button: 2,
+          buttons: 2,
+          clientX: event.clientX,
+          clientY: event.clientY,
+          view: trigger.current.ownerDocument.defaultView,
+        });
+        anchored.add(forwarded);
+        trigger.current.dispatchEvent(forwarded);
+      }}
+      {...props}
+    />
+  );
+}
+
 /** The popup: the dropdown's surface and motion, placed at the pointer. */
 function ContextMenuContent({
   side = "bottom",
@@ -131,6 +177,7 @@ function ContextMenuContent({
 export {
   ContextMenu,
   ContextMenuTrigger,
+  ContextMenuArea,
   ContextMenuContent,
   openContextMenuAt,
   skipContextMenu,
